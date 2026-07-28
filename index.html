@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Lưu Trữ Tập Trung 20GB</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #0f172a;
+            --border: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        
+        header { text-align: center; margin-bottom: 25px; }
+        header h1 { color: var(--primary); margin-bottom: 5px; }
+
+        /* Khung hiển thị Dung Lượng */
+        .storage-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .storage-card {
+            background: var(--card);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .storage-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; display: flex; justify-content: space-between; }
+        .progress-bg { width: 100%; background: #e2e8f0; height: 10px; border-radius: 5px; overflow: hidden; }
+        .progress-bar { width: 0%; background: var(--primary); height: 100%; transition: width 0.5s; }
+
+        /* Form Upload */
+        .upload-card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+            border: 2px dashed #cbd5e1;
+        }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 5px; }
+        input[type="file"], select {
+            width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;
+        }
+        .btn-upload {
+            background: var(--primary); color: white; border: none; padding: 12px; border-radius: 6px;
+            font-weight: 600; cursor: pointer; width: 100%; transition: background 0.2s;
+        }
+        .btn-upload:hover { background: var(--primary-hover); }
+        #status { margin-top: 10px; font-weight: 600; text-align: center; font-size: 0.9rem; }
+
+        /* Danh Sách Kho File */
+        .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
+        .tab-btn {
+            padding: 10px 20px; border: none; background: #e2e8f0; border-radius: 6px; cursor: pointer; font-weight: 600;
+        }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .embed-container {
+            background: var(--card); height: 500px; border-radius: 12px; overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid var(--border);
+        }
+        iframe { width: 100%; height: 100%; border: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Kho Lưu Trữ Gộp Đa Tài Khoản</h1>
+            <p>Tổng dung lượng hệ thống khả dụng</p>
+        </header>
+
+        <!-- KHU VỰC DUNG LƯỢNG -->
+        <div class="storage-grid">
+            <div class="storage-card">
+                <div class="storage-title">
+                    <span>Kho 1 (TK 1)</span>
+                    <span id="st-text-1">Đang tải...</span>
+                </div>
+                <div class="progress-bg"><div id="st-bar-1" class="progress-bar"></div></div>
+            </div>
+            <div class="storage-card">
+                <div class="storage-title">
+                    <span>Kho 2 (TK 2)</span>
+                    <span id="st-text-2">Đang tải...</span>
+                </div>
+                <div class="progress-bg"><div id="st-bar-2" class="progress-bar"></div></div>
+            </div>
+        </div>
+
+        <!-- FORM UPLOAD FILE -->
+        <div class="upload-card">
+            <form id="uploadForm">
+                <div class="form-group">
+                    <label>Chọn File Tải Lên:</label>
+                    <input type="file" id="fileInput" required>
+                </div>
+                <div class="form-group">
+                    <label>Tải Vào Kho Nào?</label>
+                    <select id="driveTarget">
+                        <option value="1">Kho 1 (Tài khoản 1)</option>
+                        <option value="2">Kho 2 (Tài khoản 2)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-upload" id="submitBtn">Tải Tệp Lên Trực Tiếp</button>
+            </form>
+            <div id="status"></div>
+        </div>
+
+        <!-- KHU VỰC XEM FILE -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('drive1', this)">📁 Xem Kho 1</button>
+            <button class="tab-btn" onclick="switchTab('drive2', this)">📁 Xem Kho 2</button>
+        </div>
+
+        <div class="embed-container" id="drive1">
+            <iframe src="https://drive.google.com/embeddedfolderview?id=1HLmBmIOrkJlqayUJJR8K_FV6EpETwhhH#grid"></iframe>
+        </div>
+
+        <div class="embed-container" id="drive2" style="display: none;">
+            <iframe src="https://drive.google.com/embeddedfolderview?id=1Nh3NKS8T6DmgsULwXHcsNCZp6AZcc55F#grid"></iframe>
+        </div>
+    </div>
+
+    <script>
+        // ⚠️ ĐIỀN 2 ĐƯỜNG DẪN APPS SCRIPT BẠN LẤY Ở BƯỚC 1 VÀO ĐÂY:
+        const URL_1 = "https://script.google.com/macros/s/AKfycbxEGpNE3pOmbI4WoyplxijVc7nLCgpBsT7VTLNGfxSYWleY1OYFcc7NwxnoMShllYkW/exec";
+        const URL_2 = "https://script.google.com/macros/s/AKfycbwcwsIMLbi59bDXyI3R-mygzvpdn1UwjQ5lQXvEUdeOe20b19Fb4wtLn8iGRonLuH4H/exec";
+
+        // Tải thông tin dung lượng từ 2 tài khoản
+        function loadStorageInfo(url, textId, barId) {
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    if(data.status === 'success') {
+                        document.getElementById(textId).innerText = `${data.usedGB}/${data.totalGB} GB (Trống ${data.freeGB} GB)`;
+                        const bar = document.getElementById(barId);
+                        bar.style.width = data.usedPercent + '%';
+                        if(data.usedPercent > 85) bar.style.background = '#dc2626';
+                    }
+                })
+                .catch(() => { document.getElementById(textId).innerText = "Lỗi tải thông tin"; });
+        }
+
+        function refreshStorage() {
+            loadStorageInfo(URL_1, 'st-text-1', 'st-bar-1');
+            loadStorageInfo(URL_2, 'st-text-2', 'st-bar-2');
+        }
+
+        // Chuyển Tab
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.embed-container').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).style.display = 'block';
+            btn.classList.add('active');
+        }
+
+        // Xử lý gửi file
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('fileInput');
+            const target = document.getElementById('driveTarget').value;
+            const statusDiv = document.getElementById('status');
+            const btn = document.getElementById('submitBtn');
+
+            if (fileInput.files.length === 0) return;
+
+            const targetUrl = (target === '1') ? URL_1 : URL_2;
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            btn.disabled = true;
+            statusDiv.style.color = '#2563eb';
+            statusDiv.innerText = 'Đang tiến hành tải file lên Google Drive...';
+
+            reader.onload = function(evt) {
+                const payload = {
+                    file: {
+                        name: file.name,
+                        type: file.type,
+                        base64: evt.target.result
+                    }
+                };
+
+                fetch(targetUrl, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                })
+                .then(res => res.json())
+                .then(data => {
+                    btn.disabled = false;
+                    if(data.status === 'success') {
+                        statusDiv.style.color = 'green';
+                        statusDiv.innerText = '🎉 Tải file thành công!';
+                        document.getElementById('uploadForm').reset();
+                        refreshStorage(); // Cập nhật lại thanh dung lượng
+                        document.querySelector(`#drive${target} iframe`).src += ''; // Refresh khung file
+                    } else {
+                        statusDiv.style.color = 'red';
+                        statusDiv.innerText = 'Lỗi: ' + data.message;
+                    }
+                })
+                .catch(err => {
+                    btn.disabled = false;
+                    statusDiv.style.color = 'red';
+                    statusDiv.innerText = 'Tải thất bại. Kiểm tra lại kết nối hoặc URL Script!';
+                });
+            };
+
+            reader.readAsDataURL(file);
+        });
+
+        // Chạy tải dung lượng khi mở web
+        refreshStorage();
+    </script>
+</body>
+</html>
