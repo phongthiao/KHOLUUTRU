@@ -52,11 +52,10 @@
       <div class="bg-slate-900/80 border border-slate-700/80 rounded-xl p-4 text-xs text-slate-300 space-y-2.5 leading-relaxed max-h-64 overflow-y-auto">
         <p class="font-bold text-rose-400">🛑 CÁC QUY ĐỊNH BẮT BUỘC tuân thủ:</p>
         <ul class="list-disc pl-4 space-y-1.5 text-slate-300">
-          <li><strong>Giới hạn tệp:</strong> Hệ thống tự động chia nhỏ với tệp lớn để lưu trữ an toàn.</li>
+          <li><strong>Chia nhỏ file:</strong> Tệp lớn hơn 19.5 MB sẽ tự động chia nhỏ để tải lên an toàn.</li>
           <li><strong>Không dùng chung:</strong> Tuyệt đối không chia sẻ tài khoản cho nhiều người dùng cùng lúc.</li>
-          <li><strong>Cấm nội dung vi phạm:</strong> Không tải lên hoặc lưu trữ nội dung vi phạm bản quyền, phim/ảnh đồi trụy, độc hại.</li>
-          <li><strong>Cấm file phần mềm độc hại:</strong> Không lưu trữ virus, mã độc, phần mềm gián điệp hay công cụ tấn công mạng.</li>
-          <li><strong>Tải lên hợp lý:</strong> Tránh thao tác liên tục hàng loạt quá nhanh để tránh bị hệ thống quét bất thường.</li>
+          <li><strong>Cấm nội dung vi phạm:</strong> Không tải lên hoặc lưu trữ nội dung vi phạm bản quyền, độc hại.</li>
+          <li><strong>Tải lên hợp lý:</strong> Tránh thao tác liên tục hàng loạt quá nhanh.</li>
         </ul>
       </div>
 
@@ -74,7 +73,7 @@
       <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <h1 class="text-2xl font-bold text-indigo-400 flex items-center gap-2">⚡ Kho Dữ Liệu Cá Nhân</h1>
-          <p class="text-xs text-slate-400 mt-1">Hỗ trợ tự động cắt/gộp file lớn - Xem & Tải về trực tiếp</p>
+          <p class="text-xs text-slate-400 mt-1">Tự động chia mảnh &gt; 19.5 MB & Gộp file hoàn chỉnh khi tải về</p>
         </div>
         
         <div class="flex flex-wrap items-center gap-2">
@@ -121,18 +120,18 @@
         </button>
       </div>
 
-      <!-- KHUNG TIẾN TRÌNH TẢI FILE -->
+      <!-- KHUNG TIẾN TRÌNH THAO TÁC (TẢI LÊN / TẢI VỀ GỘP FILE) -->
       <div id="progressModal" class="hidden bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-3 relative">
         <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-          <div class="text-xs font-bold text-indigo-400 flex items-center gap-2">
-            ⏳ Tiến Trình Tải Lên
+          <div class="text-xs font-bold text-indigo-400 flex items-center gap-2" id="progressTitleText">
+            ⏳ Tiến Trình Xử Lý
           </div>
           <button onclick="closeProgressWidget()" class="text-slate-400 hover:text-white text-base font-bold">&times;</button>
         </div>
 
         <div class="space-y-1">
           <div class="flex justify-between text-xs text-slate-300">
-            <span id="statusText" class="truncate max-w-md">Chuẩn bị tải...</span>
+            <span id="statusText" class="truncate max-w-md">Đang chuẩn bị...</span>
             <span id="percentText" class="font-bold text-emerald-400">0%</span>
           </div>
           <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
@@ -141,8 +140,8 @@
         </div>
 
         <div class="flex items-center justify-between pt-1">
-          <span id="queueCountText" class="text-[11px] text-slate-400">Đang xử lý: 0/0</span>
-          <div class="flex gap-2">
+          <span id="queueCountText" class="text-[11px] text-slate-400">Đang xử lý...</span>
+          <div class="flex gap-2" id="progressControls">
             <button id="pauseBtn" onclick="togglePauseUpload()" class="bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/30 text-xs px-3 py-1 rounded-lg transition font-semibold">
               ⏸️ Tạm Dừng
             </button>
@@ -247,7 +246,8 @@
     let CHAT_ID = localStorage.getItem('cur_chatid') || null;
 
     const MAX_STORAGE_BYTES = 100 * 1024 * 1024 * 1024; 
-    const CHUNK_SIZE = 45 * 1024 * 1024; // Cắt mảnh 45 MB an toàn dưới ngưỡng 50 MB Telegram Bot API
+    // HẠ NGƯỠNG TÁCH FILE XUỐNG 19.5 MB
+    const CHUNK_SIZE = 19.5 * 1024 * 1024; 
 
     let dbFiles = [];
     let currentFolderId = null;
@@ -433,7 +433,7 @@
       } catch (err) {}
     }
 
-    // TẢI FILE TỰ ĐỘNG CHIA MẢNH
+    // TẢI FILE - CHIA MẢNH TỪ 19.5 MB
     async function startBatchUploadQueue() {
       const input = document.getElementById('fileInput');
       const files = Array.from(input.files);
@@ -673,47 +673,91 @@
       document.getElementById('previewModal').classList.add('hidden');
     }
 
-    // TẢI FILE TỰ ĐỘNG GỘP MẢNH
+    // TẢI FILE HOÀN CHỈNH & GỘP MẢNH TỰ ĐỘNG
     async function downloadFile(fileId, fileName) {
+      const progressModal = document.getElementById('progressModal');
+      const progressBar = document.getElementById('progressBar');
+      const percentText = document.getElementById('percentText');
+      const statusText = document.getElementById('statusText');
+      const queueCountText = document.getElementById('queueCountText');
+
+      progressModal.classList.remove('hidden');
+
       try {
         const fileItem = dbFiles.find(f => f.id === fileId || f.name === fileName);
 
-        if (fileItem && fileItem.isChunked && fileItem.parts) {
-          alert(`📦 Tệp này gồm ${fileItem.parts.length} phần nhỏ. Hệ thống đang tự động tải và gộp lại, vui lòng chờ...`);
-
+        // Trường hợp file bị tách nhỏ nhiều phần (> 19.5 MB)
+        if (fileItem && fileItem.isChunked && fileItem.parts && fileItem.parts.length > 0) {
+          const totalParts = fileItem.parts.length;
           let blobParts = [];
-          for (let i = 0; i < fileItem.parts.length; i++) {
-            const partUrl = await getDirectFileUrl(fileItem.parts[i]);
-            if (!partUrl) throw new Error(`Lỗi lấy link mảnh ${i + 1}`);
 
-            const response = await fetch(partUrl);
-            const blob = await response.blob();
-            blobParts.push(blob);
+          for (let i = 0; i < totalParts; i++) {
+            const partId = fileItem.parts[i];
+            const percent = Math.round(((i) / totalParts) * 100);
+            
+            progressBar.style.width = percent + '%';
+            percentText.innerText = percent + '%';
+            statusText.innerText = `⏳ Đang tải mảnh (${i + 1}/${totalParts}): ${fileName}`;
+            queueCountText.innerText = `Đang kết nối Cloud Telegram...`;
+
+            const partUrl = await getDirectFileUrl(partId);
+            if (!partUrl) throw new Error(`Không thể lấy đường dẫn tải mảnh ${i + 1}`);
+
+            // Tải dữ liệu từng mảnh bằng ArrayBuffer để tránh lỗi đệm
+            const res = await fetch(partUrl);
+            if (!res.ok) throw new Error(`Lỗi tải dữ liệu mảnh ${i + 1}`);
+            const buffer = await res.arrayBuffer();
+            blobParts.push(buffer);
           }
 
+          statusText.innerText = `🧩 Đang gộp ${totalParts} mảnh lại thành 1 file...`;
+          progressBar.style.width = '100%';
+          percentText.innerText = '100%';
+
+          // Gộp các mảng Byte lại thành 1 file Blob hoàn chỉnh duy nhất
           const mergedBlob = new Blob(blobParts);
+          
+          // Tạo liên kết tải về trình duyệt
+          const blobUrl = URL.createObjectURL(mergedBlob);
           const a = document.createElement('a');
-          a.href = URL.createObjectURL(mergedBlob);
+          a.href = blobUrl;
           a.download = fileName;
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          URL.revokeObjectURL(a.href);
+          
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+          statusText.innerText = `✅ Đã tải xuống thành công file: ${fileName}`;
           return;
         }
 
-        const url = await getDirectFileUrl(fileId);
-        if (!url) return alert("❌ Không thể lấy liên kết tải tệp!");
+        // Trường hợp file nhỏ bình thường (<= 19.5 MB)
+        statusText.innerText = `⏳ Đang chuẩn bị tải: ${fileName}`;
+        progressBar.style.width = '50%';
+        percentText.innerText = '50%';
+        queueCountText.innerText = 'Đang lấy liên kết direct...';
 
+        const url = await getDirectFileUrl(fileId);
+        if (!url) throw new Error("Không lấy được đường dẫn tệp!");
+
+        const res = await fetch(url);
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        
         const a = document.createElement('a');
-        a.href = url;
+        a.href = blobUrl;
         a.download = fileName;
-        a.target = "_blank";
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
+
+        progressBar.style.width = '100%';
+        percentText.innerText = '100%';
+        statusText.innerText = `✅ Đã tải xuống thành công: ${fileName}`;
+
       } catch (e) {
-        alert("❌ Lỗi trong quá trình gộp và tải tệp xuống!");
+        alert("❌ Có lỗi xảy ra trong quá trình gộp và tải tệp: " + e.message);
+        statusText.innerText = "❌ Lỗi tải tệp!";
       }
     }
 
