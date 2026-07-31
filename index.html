@@ -1,516 +1,277 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Quản Lý & Lưu Trữ Tài Liệu</title>
-    <style>
-        :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --danger: #dc2626;
-            --danger-hover: #b91c1c;
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --text: #0f172a;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: var(--bg); color: var(--text); padding: 30px 15px; }
-        .container { max-width: 900px; margin: 0 auto; }
-        
-        header { text-align: center; margin-bottom: 25px; }
-        header h1 { color: #1e293b; font-size: 1.8rem; font-weight: 700; margin-bottom: 6px; }
-
-        /* Dung lượng chia 3 cột */
-        .storage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 25px; }
-        .storage-card { background: var(--card); padding: 18px; border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow); }
-        .storage-title { font-size: 0.88rem; font-weight: 600; margin-bottom: 8px; display: flex; justify-content: space-between; }
-        .progress-bg { width: 100%; background: #f1f5f9; height: 8px; border-radius: 99px; overflow: hidden; }
-        .progress-bar { width: 0%; background: var(--primary); height: 100%; border-radius: 99px; transition: width 0.5s ease; }
-
-        /* Form Upload & Action Box */
-        .card-box { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 25px; }
-        .mode-selector { display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
-        .mode-btn { background: none; border: none; font-weight: 600; font-size: 0.9rem; color: var(--text-muted); cursor: pointer; padding: 5px 10px; border-radius: 6px; }
-        .mode-btn.active { background: #eff6ff; color: var(--primary); }
-
-        .form-group { margin-bottom: 12px; }
-        .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: #475569; }
-        input[type="file"], input[type="text"], select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.88rem; background: #fff; }
-        
-        .btn-action { width: 100%; padding: 11px; border: none; border-radius: 6px; font-weight: 600; background: var(--primary); color: white; cursor: pointer; transition: background 0.2s; }
-        .btn-action:hover { background: var(--primary-hover); }
-        .btn-action:disabled { background: #94a3b8; cursor: not-allowed; }
-        .status-msg { margin-top: 10px; font-size: 0.85rem; font-weight: 600; text-align: center; }
-
-        /* Tabs Kho */
-        .tabs { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
-        .tab-btn { padding: 10px 20px; border: 1px solid var(--border); background: var(--card); border-radius: 8px; cursor: pointer; font-weight: 600; color: #64748b; }
-        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-
-        /* Thanh Tìm kiếm & Thao tác hàng loạt */
-        .list-controls { background: var(--card); border: 1px solid var(--border); border-radius: 12px 12px 0 0; padding: 15px; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; border-bottom: none; }
-        .search-box { flex: 1; min-width: 220px; }
-        .search-box input { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.88rem; outline: none; }
-        .search-box input:focus { border-color: var(--primary); }
-
-        .bulk-actions { display: flex; align-items: center; gap: 15px; }
-        .select-all-label { font-size: 0.85rem; font-weight: 600; color: #475569; display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
-        
-        .btn-bulk-delete { padding: 8px 14px; border: none; border-radius: 6px; font-size: 0.82rem; font-weight: 600; background: var(--danger); color: white; cursor: pointer; transition: background 0.2s; }
-        .btn-bulk-delete:hover { background: var(--danger-hover); }
-        .btn-bulk-delete:disabled { background: #cbd5e1; color: #94a3b8; cursor: not-allowed; }
-
-        /* Danh Sách File */
-        .file-list-container { background: var(--card); border-radius: 0 0 12px 12px; border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; }
-        .file-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 18px; border-bottom: 1px solid var(--border); }
-        .file-item:last-child { border-bottom: none; }
-        
-        .file-item-left { display: flex; align-items: center; gap: 12px; }
-        .file-checkbox { width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary); }
-
-        .file-info { display: flex; flex-direction: column; gap: 3px; }
-        .file-name { font-weight: 600; font-size: 0.92rem; color: #1e293b; text-decoration: none; }
-        .file-name:hover { color: var(--primary); }
-        .file-meta { font-size: 0.78rem; color: var(--text-muted); }
-
-        /* Menu 3 Chấm */
-        .menu-container { position: relative; }
-        .three-dots-btn { background: none; border: none; font-size: 1.3rem; cursor: pointer; padding: 4px 10px; border-radius: 4px; color: #64748b; }
-        .three-dots-btn:hover { background: #f1f5f9; color: #0f172a; }
-        
-        .dropdown-menu { display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); z-index: 100; min-width: 140px; overflow: hidden; }
-        .dropdown-menu.show { display: block; }
-        .dropdown-item { display: block; padding: 10px 14px; font-size: 0.85rem; color: #334155; text-decoration: none; cursor: pointer; }
-        .dropdown-item:hover { background: #f8fafc; }
-        .dropdown-item.danger { color: var(--danger); font-weight: 600; }
-        .dropdown-item.danger:hover { background: #fef2f2; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hệ Thống Quản Lý 3 Kho OneDrive 15GB</title>
+  <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 20px; background: #f0f2f5; color: #333; }
+    .container { max-width: 1100px; margin: 0 auto; }
+    .accounts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .progress-bar { height: 12px; background: #e0e0e0; border-radius: 6px; overflow: hidden; margin: 10px 0; }
+    .progress-fill { height: 100%; background: #0078d4; width: 0%; transition: width 0.3s; }
+    .btn { background: #0078d4; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-weight: 500; margin-right: 5px; }
+    .btn:hover { background: #005a9e; }
+    .btn-success { background: #107c41; }
+    .btn-danger { background: #d13438; }
+    input[type="text"], input[type="file"] { padding: 8px; margin: 5px 0; border: 1px solid #ccc; border-radius: 6px; width: 100%; box-sizing: border-box; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; border-radius: 8px; overflow: hidden; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+    th { background: #f8f9fa; }
+    .status-text { font-size: 0.9em; color: #0078d4; font-weight: bold; margin-top: 10px; }
+  </style>
 </head>
 <body>
+  <div class="container">
+    <h2>📁 Quản Lý 3 Kho OneDrive Cá Nhân (15GB Tổng)</h2>
+    
+    <div class="accounts-grid" id="accountsList"></div>
 
-    <div class="container">
-        <header>
-            <h1>Kho Lưu Trữ Tài Liệu Tập Trung</h1>
-        </header>
-
-        <!-- DUNG LƯỢNG KHO -->
-        <div class="storage-grid">
-            <div class="storage-card">
-                <div class="storage-title"><span id="folder-title-1">Kho Tài Liệu 1</span><span id="st-text-1">Đang tải...</span></div>
-                <div class="progress-bg"><div id="st-bar-1" class="progress-bar"></div></div>
-            </div>
-            <div class="storage-card">
-                <div class="storage-title"><span id="folder-title-2">Kho Tài Liệu 2</span><span id="st-text-2">Đang tải...</span></div>
-                <div class="progress-bg"><div id="st-bar-2" class="progress-bar"></div></div>
-            </div>
-            <div class="storage-card">
-                <div class="storage-title"><span id="folder-title-3">Kho Tài Liệu 3</span><span id="st-text-3">Đang tải...</span></div>
-                <div class="progress-bg"><div id="st-bar-3" class="progress-bar"></div></div>
-            </div>
-        </div>
-
-        <!-- BOX THAO TÁC NÂNG CẤP: UPLOAD TỆP / UPLOAD THƯ MỤC / TẠO THƯ MỤC -->
-        <div class="card-box">
-            <div class="mode-selector">
-                <button class="mode-btn active" id="modeFileBtn" onclick="switchMode('file')">📄 Tải Tệp Lên</button>
-                <button class="mode-btn" id="modeFolderBtn" onclick="switchMode('folder')">📁 Tải Thư Mục Lên</button>
-                <button class="mode-btn" id="modeCreateBtn" onclick="switchMode('create')">➕ Tạo Thư Mục Mới</button>
-            </div>
-
-            <form id="actionForm">
-                <!-- Chế độ 1: Chọn Tệp -->
-                <div class="form-group" id="fileGroup">
-                    <label>Chọn Tệp (Có thể chọn nhiều tệp):</label>
-                    <input type="file" id="fileInput" multiple>
-                </div>
-
-                <!-- Chế độ 2: Chọn Thư Mục -->
-                <div class="form-group" id="folderGroup" style="display: none;">
-                    <label>Chọn Thư Mục Từ Máy Tính:</label>
-                    <input type="file" id="folderInput" webkitdirectory directory multiple>
-                </div>
-
-                <!-- Chế độ 3: Tạo Thư Mục Mới -->
-                <div class="form-group" id="createGroup" style="display: none;">
-                    <label>Tên Thư Mục Cần Tạo:</label>
-                    <input type="text" id="newFolderName" placeholder="Ví dụ: Tài liệu Kế toán 2026">
-                </div>
-
-                <div class="form-group">
-                    <label>Chọn Kho Lưu Trữ:</label>
-                    <select id="actionTarget">
-                        <option value="1">Kho Tài Liệu 1</option>
-                        <option value="2">Kho Tài Liệu 2</option>
-                        <option value="3">Kho Tài Liệu 3</option>
-                    </select>
-                </div>
-
-                <button type="submit" class="btn-action" id="actionBtn">Bắt Đầu Tải Tệp Lên</button>
-            </form>
-            <div id="actionStatus" class="status-msg"></div>
-        </div>
-
-        <!-- TABS KHO -->
-        <div class="tabs">
-            <button class="tab-btn active" id="tab1" onclick="switchStorage(1)">📁 Kho Tài Liệu 1</button>
-            <button class="tab-btn" id="tab2" onclick="switchStorage(2)">📁 Kho Tài Liệu 2</button>
-            <button class="tab-btn" id="tab3" onclick="switchStorage(3)">📁 Kho Tài Liệu 3</button>
-        </div>
-
-        <!-- THANH TÌM KIẾM & XÓA HÀNG LOẠT -->
-        <div class="list-controls">
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="🔍 Tìm kiếm file/thư mục theo tên..." oninput="handleSearch()">
-            </div>
-            <div class="bulk-actions">
-                <label class="select-all-label">
-                    <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" class="file-checkbox">
-                    Chọn tất cả
-                </label>
-                <button id="btnBulkDelete" class="btn-bulk-delete" onclick="deleteSelectedFiles()" disabled>
-                    🗑️ Xóa đã chọn (0)
-                </button>
-            </div>
-        </div>
-
-        <!-- DANH SÁCH FILE VÀ THƯ MỤC -->
-        <div class="file-list-container" id="fileList">
-            <div style="text-align: center; padding: 25px; color: #64748b;">⏳ Đang tải danh sách...</div>
-        </div>
+    <div class="card">
+      <h3 id="currentKhoTitle">🔍 Đang chọn: Chưa mở kho nào</h3>
+      <input type="text" id="searchInput" placeholder="Tìm kiếm tệp trong kho..." oninput="filterFiles()">
+      
+      <div style="margin-top: 15px;">
+        <label><b>Tải tệp lên kho đang mở (Tự động hỗ trợ file lớn > 4MB):</b></label>
+        <input type="file" id="fileUploader" multiple>
+        <button class="btn btn-success" id="btnUpload" onclick="uploadFiles()">🚀 Tải Lên</button>
+        <button class="btn" id="btnDownloadBatch" onclick="downloadSelectedBatch()">📦 Tải Hàng Loạt (.ZIP)</button>
+      </div>
+      <div id="statusMessage" class="status-text"></div>
     </div>
 
-    <script>
-        // CẬP NHẬT 3 URL WEB APP
-        const URL_1 = "https://script.google.com/macros/s/AKfycbzO9l9zwjvXTEHBhRLvTYsnvlg7Yt-DCAQT8UVm5ICRq33ZmOBtI9GoBpEgg23HNGRN/exec";
-        const URL_2 = "https://script.google.com/macros/s/AKfycbz7eVwQB6lqP7UVhvaiSzvfT5ncB6G2CDxJeB_M7Mk6bPZATPuoYEq_X3SfR1flvlAK/exec";
-        
-        // URL MỚI CHO KHO 3
-        const URL_3 = "https://script.google.com/macros/s/AKfycbwGBXc2xzSk8iGQBK2CoAbZUNsTaLPvaNDWYrYnUMYaOCEIe3QRq4F-YWXpExKwyodJ/exec";
+    <table id="fileTable">
+      <thead>
+        <tr>
+          <th width="40"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
+          <th>Tên Tệp / Thư Mục</th>
+          <th>Dung Lượng</th>
+          <th>Thao Tác</th>
+        </tr>
+      </thead>
+      <tbody id="fileListBody">
+        <tr><td colspan="4" style="text-align: center;">Vui lòng bấm nút "+ Kết Nối Hotmail" hoặc "📂 Mở Kho Này" ở trên.</td></tr>
+      </tbody>
+    </table>
+  </div>
 
-        let currentTarget = 1;
-        let activeMode = 'file'; // 'file' | 'folder' | 'create'
-        let storageData = { 1: null, 2: null, 3: null };
-        let currentSearchQuery = "";
+  <script>
+    // Dùng Client ID Public chính thức của Microsoft Graph
+    const CLIENT_ID = "de8bc8b5-d9f9-48b1-a8ad-0738d72e7ad6";
 
-        function getUrlByTarget(target) {
-            if (target === 1) return URL_1;
-            if (target === 2) return URL_2;
-            if (target === 3) return URL_3;
-            return URL_1;
+    const msalConfig = {
+      auth: {
+        clientId: CLIENT_ID,
+        authority: "https://login.microsoftonline.com/common"
+      },
+      cache: { cacheLocation: "localStorage" }
+    };
+
+    const msalApp = new msal.PublicClientApplication(msalConfig);
+    const SCOPES = ["User.Read", "Files.ReadWrite.All"];
+    let currentAccountIndex = null;
+    let currentFiles = [];
+
+    async function init() {
+      await msalApp.initialize();
+      const accounts = msalApp.getAllAccounts();
+      renderAccounts(accounts);
+    }
+
+    async function loginAccount() {
+      try {
+        await msalApp.loginPopup({ scopes: SCOPES });
+        init();
+      } catch (err) {
+        console.error("Đăng nhập thất bại:", err);
+      }
+    }
+
+    async function getAccessToken(account) {
+      try {
+        const res = await msalApp.acquireTokenSilent({ account, scopes: SCOPES });
+        return res.accessToken;
+      } catch {
+        const res = await msalApp.acquireTokenPopup({ account, scopes: SCOPES });
+        return res.accessToken;
+      }
+    }
+
+    async function renderAccounts(accounts) {
+      const container = document.getElementById("accountsList");
+      container.innerHTML = "";
+
+      for (let i = 0; i < 3; i++) {
+        const acc = accounts[i];
+        const card = document.createElement("div");
+        card.className = "card";
+
+        if (acc) {
+          const token = await getAccessToken(acc);
+          const driveInfo = await fetchDriveQuota(token);
+          const usedGB = (driveInfo.used / (1024 ** 3)).toFixed(2);
+          const totalGB = (driveInfo.total / (1024 ** 3)).toFixed(2);
+          const percent = ((driveInfo.used / driveInfo.total) * 100).toFixed(1);
+
+          card.innerHTML = `
+            <h4>Kho ${i + 1}: ${acc.username}</h4>
+            <p>Đã dùng: <b>${usedGB} GB</b> / ${totalGB} GB (${percent}%)</p>
+            <div class="progress-bar"><div class="progress-fill" style="width: ${percent}%"></div></div>
+            <button class="btn" onclick="loadFiles(${i})">📂 Mở Kho Này</button>
+            <button class="btn btn-danger" onclick="logoutAccount(${i})">Thoát Kho</button>
+          `;
+        } else {
+          card.innerHTML = `
+            <h4>Kho ${i + 1}: (Chưa liên kết)</h4>
+            <p>Liên kết tài khoản Hotmail ${i + 1}</p>
+            <button class="btn" onclick="loginAccount()">+ Kết Nối Hotmail</button>
+          `;
         }
+        container.appendChild(card);
+      }
+    }
 
-        // Chuyển chế độ thao tác trên Form
-        function switchMode(mode) {
-            activeMode = mode;
-            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('fileGroup').style.display = 'none';
-            document.getElementById('folderGroup').style.display = 'none';
-            document.getElementById('createGroup').style.display = 'none';
+    async function fetchDriveQuota(token) {
+      try {
+        const res = await fetch("https://graph.microsoft.com/v1.0/me/drive", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        return data.quota || { used: 0, total: 5368709120 };
+      } catch {
+        return { used: 0, total: 5368709120 };
+      }
+    }
 
-            if (mode === 'file') {
-                document.getElementById('modeFileBtn').classList.add('active');
-                document.getElementById('fileGroup').style.display = 'block';
-                document.getElementById('actionBtn').innerText = 'Bắt Đầu Tải Tệp Lên';
-            } else if (mode === 'folder') {
-                document.getElementById('modeFolderBtn').classList.add('active');
-                document.getElementById('folderGroup').style.display = 'block';
-                document.getElementById('actionBtn').innerText = 'Bắt Đầu Tải Thư Mục Lên';
-            } else if (mode === 'create') {
-                document.getElementById('modeCreateBtn').classList.add('active');
-                document.getElementById('createGroup').style.display = 'block';
-                document.getElementById('actionBtn').innerText = 'Tạo Thư Mục';
-            }
-        }
+    async function loadFiles(accIndex) {
+      currentAccountIndex = accIndex;
+      const account = msalApp.getAllAccounts()[accIndex];
+      document.getElementById("currentKhoTitle").innerText = `🔍 Đang chọn: Kho ${accIndex + 1} (${account.username})`;
+      
+      const token = await getAccessToken(account);
+      const res = await fetch("https://graph.microsoft.com/v1.0/me/drive/root/children", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      currentFiles = data.value || [];
+      renderFileList(currentFiles);
+    }
 
-        async function fetchStorage(target) {
-            const url = getUrlByTarget(target);
-            try {
-                const res = await fetch(url);
-                const data = await res.json();
-                if (data.status === 'success') {
-                    storageData[target] = data;
-                    updateUI(target);
-                }
-            } catch (err) {
-                document.getElementById(`st-text-${target}`).innerText = "Lỗi kết nối";
-            }
-        }
+    function renderFileList(files) {
+      const tbody = document.getElementById("fileListBody");
+      tbody.innerHTML = "";
 
-        function updateUI(target) {
-            const data = storageData[target];
-            if (!data) return;
+      if (files.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Kho này hiện tại chưa có tệp nào.</td></tr>';
+        return;
+      }
 
-            if (data.folderName) {
-                document.getElementById(`folder-title-${target}`).innerText = data.folderName;
-            }
-            document.getElementById(`st-text-${target}`).innerText = `${data.usedGB}/${data.totalGB} GB`;
-            const bar = document.getElementById(`st-bar-${target}`);
-            bar.style.width = data.usedPercent + '%';
+      files.forEach((file, index) => {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        const downloadUrl = file["@microsoft.graph.downloadUrl"];
 
-            if (target === currentTarget) {
-                renderFileList(data.files);
-            }
-        }
+        tbody.innerHTML += `
+          <tr>
+            <td><input type="checkbox" class="file-select" data-index="${index}"></td>
+            <td>${file.folder ? "📁" : "📄"} <b>${file.name}</b></td>
+            <td>${file.folder ? "-" : sizeMB + " MB"}</td>
+            <td>
+              ${file.file ? `<a href="${downloadUrl}" target="_blank" class="btn">Tải Về</a>` : ""}
+            </td>
+          </tr>
+        `;
+      });
+    }
 
-        function handleSearch() {
-            currentSearchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
-            if (storageData[currentTarget]) {
-                renderFileList(storageData[currentTarget].files);
-            }
-        }
+    async function uploadFiles() {
+      if (currentAccountIndex === null) return alert("Vui lòng mở 1 kho trước khi tải tệp lên!");
+      const fileInput = document.getElementById("fileUploader");
+      if (!fileInput.files.length) return alert("Vui lòng chọn ít nhất 1 tệp!");
 
-        function renderFileList(files) {
-            const container = document.getElementById('fileList');
-            resetSelection();
+      const account = msalApp.getAllAccounts()[currentAccountIndex];
+      const token = await getAccessToken(account);
+      const status = document.getElementById("statusMessage");
 
-            if (!files || files.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 25px; color: #64748b;">Chưa có tệp hoặc thư mục nào trong kho này.</div>';
-                return;
-            }
+      for (let file of fileInput.files) {
+        status.innerText = `⏳ Đang tải lên: ${file.name}...`;
+        if (file.size < 4 * 1024 * 1024) {
+          await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${file.name}:/content`, {
+            method: "PUT",
+            headers: { Authorization: `Bearer ${token}`, "Content-Type": file.type },
+            body: file
+          });
+        } else {
+          const sessionRes = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${file.name}:/createUploadSession`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+          });
+          const sessionData = await sessionRes.json();
+          const uploadUrl = sessionData.uploadUrl;
 
-            const filteredFiles = files.filter(f => f.name.toLowerCase().includes(currentSearchQuery));
-
-            if (filteredFiles.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 25px; color: #64748b;">🔍 Không tìm thấy kết quả phù hợp.</div>';
-                return;
-            }
-
-            let html = '';
-            filteredFiles.forEach(f => {
-                const icon = f.isFolder ? '📁' : '📄';
-                html += `
-                <div class="file-item">
-                    <div class="file-item-left">
-                        <input type="checkbox" class="file-checkbox item-checkbox" value="${f.id}" onchange="updateSelectedCount()">
-                        <div class="file-info">
-                            <a href="${f.url}" target="_blank" class="file-name">${icon} ${f.name}</a>
-                            <span class="file-meta">${f.size}</span>
-                        </div>
-                    </div>
-                    <div class="menu-container">
-                        <button class="three-dots-btn" onclick="toggleMenu(event, '${f.id}')">⋮</button>
-                        <div class="dropdown-menu" id="menu-${f.id}">
-                            <a href="${f.url}" target="_blank" class="dropdown-item">👁️ Xem chi tiết</a>
-                            ${!f.isFolder ? `<a href="${f.downloadUrl}" class="dropdown-item">📥 Tải về</a>` : ''}
-                            <div class="dropdown-item danger" onclick="deleteSingleFile('${f.id}')">🗑️ Xóa</div>
-                        </div>
-                    </div>
-                </div>`;
+          const chunkSize = 320 * 1024 * 10;
+          let start = 0;
+          while (start < file.size) {
+            const end = Math.min(start + chunkSize, file.size);
+            const chunk = file.slice(start, end);
+            await fetch(uploadUrl, {
+              method: "PUT",
+              headers: { "Content-Range": `bytes ${start}-${end - 1}/${file.size}` },
+              body: chunk
             });
-            container.innerHTML = html;
+            start = end;
+            status.innerText = `⏳ Đang tải lên ${file.name}: ${((start/file.size)*100).toFixed(0)}%`;
+          }
         }
+      }
+      status.innerText = "✅ Tải lên thành công tất cả tệp!";
+      fileInput.value = "";
+      loadFiles(currentAccountIndex);
+      init();
+    }
 
-        function toggleMenu(e, id) {
-            e.stopPropagation();
-            document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
-            const menu = document.getElementById(`menu-${id}`);
-            if (menu) menu.classList.toggle('show');
+    async function downloadSelectedBatch() {
+      const checkboxes = document.querySelectorAll(".file-select:checked");
+      if (checkboxes.length === 0) return alert("Vui lòng tích chọn ít nhất 1 tệp!");
+
+      const zip = new JSZip();
+      const status = document.getElementById("statusMessage");
+      status.innerText = "⏳ Đang chuẩn bị các tệp...";
+
+      for (let cb of checkboxes) {
+        const fileData = currentFiles[cb.getAttribute("data-index")];
+        if (fileData.file) {
+          const downloadUrl = fileData["@microsoft.graph.downloadUrl"];
+          const blob = await fetch(downloadUrl).then(r => r.blob());
+          zip.file(fileData.name, blob);
         }
+      }
 
-        document.addEventListener('click', () => {
-            document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
-        });
+      status.innerText = "⏳ Đang nén file ZIP...";
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, `OneDrive_Kho_${currentAccountIndex + 1}_Files.zip`);
+      status.innerText = "✅ Đã tải file ZIP thành công!";
+    }
 
-        function toggleSelectAll(master) {
-            const checkboxes = document.querySelectorAll('.item-checkbox');
-            checkboxes.forEach(cb => cb.checked = master.checked);
-            updateSelectedCount();
-        }
+    function toggleSelectAll(masterKey) {
+      document.querySelectorAll(".file-select").forEach(cb => cb.checked = masterKey.checked);
+    }
 
-        function updateSelectedCount() {
-            const selected = document.querySelectorAll('.item-checkbox:checked');
-            const total = document.querySelectorAll('.item-checkbox');
-            const btn = document.getElementById('btnBulkDelete');
-            const selectAll = document.getElementById('selectAllCheckbox');
+    function filterFiles() {
+      const query = document.getElementById("searchInput").value.toLowerCase();
+      const filtered = currentFiles.filter(f => f.name.toLowerCase().includes(query));
+      renderFileList(filtered);
+    }
 
-            btn.innerText = `🗑️ Xóa đã chọn (${selected.length})`;
-            btn.disabled = selected.length === 0;
+    function logoutAccount(index) {
+      const account = msalApp.getAllAccounts()[index];
+      msalApp.logoutPopup({ account }).then(() => init());
+    }
 
-            if (total.length > 0 && selected.length === total.length) {
-                selectAll.checked = true;
-                selectAll.indeterminate = false;
-            } else if (selected.length > 0) {
-                selectAll.checked = false;
-                selectAll.indeterminate = true;
-            } else {
-                selectAll.checked = false;
-                selectAll.indeterminate = false;
-            }
-        }
-
-        function resetSelection() {
-            document.getElementById('selectAllCheckbox').checked = false;
-            document.getElementById('selectAllCheckbox').indeterminate = false;
-            const btn = document.getElementById('btnBulkDelete');
-            btn.innerText = `🗑️ Xóa đã chọn (0)`;
-            btn.disabled = true;
-        }
-
-        async function deleteSelectedFiles() {
-            const selectedCheckboxes = document.querySelectorAll('.item-checkbox:checked');
-            const idsToDelete = Array.from(selectedCheckboxes).map(cb => cb.value);
-
-            if (idsToDelete.length === 0) return;
-            if (!confirm(`Bạn có chắc muốn xóa ${idsToDelete.length} mục đã chọn?`)) return;
-
-            const url = getUrlByTarget(currentTarget);
-            const btn = document.getElementById('btnBulkDelete');
-            btn.disabled = true;
-
-            let successCount = 0;
-            for (let i = 0; i < idsToDelete.length; i++) {
-                btn.innerText = `⏳ Đang xóa (${i + 1}/${idsToDelete.length})...`;
-                try {
-                    const res = await fetch(url, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: "delete", fileId: idsToDelete[i] })
-                    });
-                    const data = await res.json();
-                    if (data.status === 'success') successCount++;
-                } catch (err) {}
-            }
-
-            alert(`✅ Đã xóa xong ${successCount}/${idsToDelete.length} mục!`);
-            refreshAll();
-        }
-
-        async function deleteSingleFile(fileId) {
-            if (!confirm("Bạn có chắc chắn muốn xóa mục này?")) return;
-
-            const url = getUrlByTarget(currentTarget);
-            try {
-                const res = await fetch(url, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: "delete", fileId: fileId })
-                });
-                const data = await res.json();
-                if (data.status === 'success') {
-                    alert("✅ " + data.message);
-                    refreshAll();
-                } else {
-                    alert("❌ Lỗi: " + data.message);
-                }
-            } catch (err) {
-                alert("❌ Thao tác thất bại!");
-            }
-        }
-
-        function switchStorage(target) {
-            currentTarget = target;
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(`tab${target}`).classList.add('active');
-
-            document.getElementById('searchInput').value = "";
-            currentSearchQuery = "";
-
-            if (storageData[target]) {
-                renderFileList(storageData[target].files);
-            } else {
-                document.getElementById('fileList').innerHTML = '<div style="text-align: center; padding: 25px; color: #64748b;">⏳ Đang tải...</div>';
-                fetchStorage(target);
-            }
-        }
-
-        function refreshAll() {
-            fetchStorage(1);
-            fetchStorage(2);
-            fetchStorage(3);
-        }
-
-        // XỬ LÝ FORM THỰC THI CHÍNH
-        document.getElementById('actionForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const target = parseInt(document.getElementById('actionTarget').value);
-            const statusDiv = document.getElementById('actionStatus');
-            const btn = document.getElementById('actionBtn');
-            const url = getUrlByTarget(target);
-
-            btn.disabled = true;
-            statusDiv.style.color = '#2563eb';
-
-            // 1. TẠO THƯ MỤC MỚI
-            if (activeMode === 'create') {
-                const folderName = document.getElementById('newFolderName').value.trim();
-                if (!folderName) {
-                    alert('Vui lòng nhập tên thư mục!');
-                    btn.disabled = false;
-                    return;
-                }
-                statusDiv.innerText = `⏳ Đang tạo thư mục "${folderName}" tại Kho ${target}...`;
-
-                try {
-                    const res = await fetch(url, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: "createFolder", folderName: folderName })
-                    });
-                    const data = await res.json();
-                    if (data.status === 'success') {
-                        statusDiv.style.color = '#16a34a';
-                        statusDiv.innerText = '🎉 Tạo thư mục thành công!';
-                        document.getElementById('newFolderName').value = '';
-                        refreshAll();
-                    } else {
-                        statusDiv.style.color = '#dc2626';
-                        statusDiv.innerText = '❌ Lỗi: ' + data.message;
-                    }
-                } catch(err) {
-                    statusDiv.style.color = '#dc2626';
-                    statusDiv.innerText = '❌ Lỗi kết nối!';
-                } finally {
-                    btn.disabled = false;
-                }
-                return;
-            }
-
-            // 2. TẢI TỆP HOẶC TẢI THƯ MỤC LÊN
-            const inputEl = activeMode === 'file' ? document.getElementById('fileInput') : document.getElementById('folderInput');
-            const files = inputEl.files;
-
-            if (files.length === 0) {
-                alert('Vui lòng chọn tệp hoặc thư mục!');
-                btn.disabled = false;
-                return;
-            }
-
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const relativePath = file.webkitRelativePath || file.name;
-
-                statusDiv.innerText = `⏳ Đang tải (${i + 1}/${files.length}): ${file.name}...`;
-
-                try {
-                    const base64 = await new Promise((res, rej) => {
-                        const r = new FileReader();
-                        r.onload = e => res(e.target.result);
-                        r.onerror = rej;
-                        r.readAsDataURL(file);
-                    });
-
-                    await fetch(url, {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            action: "uploadFile",
-                            relativePath: relativePath,
-                            file: { name: file.name, type: file.type || 'application/octet-stream', base64: base64 }
-                        })
-                    });
-                } catch (err) {}
-            }
-
-            btn.disabled = false;
-            statusDiv.style.color = '#16a34a';
-            statusDiv.innerText = '🎉 Đã tải lên hoàn tất!';
-            inputEl.value = '';
-            refreshAll();
-        });
-
-        // Khởi tạo ứng dụng
-        refreshAll();
-    </script>
+    init();
+  </script>
 </body>
 </html>
