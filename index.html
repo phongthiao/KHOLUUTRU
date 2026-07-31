@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kho Dữ Liệu Đám Mây Cloud Pro</title>
+  <title>Hệ Thống Lưu Trữ Đám Mây Cloud</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen p-3 sm:p-6 font-sans">
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 sm:p-6 font-sans">
 
   <!-- MÀN HÌNH ĐĂNG NHẬP -->
   <div id="loginScreen" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md flex items-center justify-center z-50 p-4">
@@ -15,12 +16,12 @@
       <div class="text-center space-y-1">
         <div class="text-4xl">🔐</div>
         <h2 class="text-xl font-bold text-indigo-400">Đăng Nhập Kho Dữ Liệu</h2>
-        <p class="text-xs text-slate-400">Đồng bộ đám mây vĩnh viễn qua Telegram Pin</p>
+        <p class="text-xs text-slate-400">Đồng bộ đa thiết bị qua Telegram Pinned Cloud</p>
       </div>
       
       <div class="space-y-3">
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Mã thiết bị / User (MTB):</label>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Mã thiết bị (MTB):</label>
           <input type="text" id="inputMTB" placeholder="Ví dụ: KH001" class="w-full bg-slate-900 border border-slate-700 text-sm px-4 py-2.5 rounded-xl outline-none focus:border-indigo-500 font-mono uppercase">
         </div>
         <div>
@@ -38,46 +39,43 @@
   </div>
 
   <!-- GIAO DIỆN CHÍNH -->
-  <div id="mainApp" class="max-w-5xl mx-auto space-y-5 hidden">
+  <div class="max-w-5xl mx-auto space-y-6">
+    
     <!-- Header -->
-    <div class="bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-lg border border-slate-700 space-y-4">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+    <div class="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 space-y-4">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 class="text-xl sm:text-2xl font-bold text-indigo-400 flex items-center gap-2">⚡ Kho Đám Mây Cá Nhân</h1>
-          <p class="text-xs text-slate-400 mt-0.5">Đồng bộ đám mây vĩnh viễn qua Telegram Pinned DB</p>
+          <h1 class="text-2xl font-bold text-indigo-400 flex items-center gap-2">⚡ Kho Đám Mây Cá Nhân</h1>
+          <p class="text-xs text-slate-400 mt-1">Đồng bộ dữ liệu đa thiết bị vĩnh viễn</p>
         </div>
         
-        <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <span id="userInfoBadge" class="text-xs bg-indigo-500/20 text-indigo-300 px-3 py-1.5 rounded-xl border border-indigo-500/30 font-mono">MTB: ...</span>
+        <div class="flex flex-wrap items-center gap-2">
+          <span id="userInfoBadge" class="text-xs bg-indigo-500/20 text-indigo-300 px-3 py-2 rounded-xl border border-indigo-500/30 font-mono">Thiết bị: ...</span>
           
-          <button onclick="downloadAllAsZip()" id="zipBtn" class="text-xs bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/30 px-3 py-1.5 rounded-xl transition font-semibold flex items-center gap-1">
-            📦 Tải Gom ZIP
+          <button onclick="syncFromTelegram(true)" class="text-xs bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/30 px-3 py-2 rounded-xl transition flex items-center gap-1 font-semibold" title="Tải CSDL mới nhất từ Telegram">
+            🔄 Đồng Bộ Lại Dữ Liệu
           </button>
 
-          <button onclick="loadDatabaseFromTelegram(true)" class="text-xs bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded-xl transition font-semibold flex items-center gap-1">
-            🔄 Đồng Bộ Lại
-          </button>
-
-          <button onclick="logout()" class="text-xs bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 px-3 py-1.5 rounded-xl transition">
-            🚪 Thoát
+          <button onclick="logout()" class="text-xs bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 px-3 py-2 rounded-xl transition">
+            🚪 Đăng Xuất
           </button>
         </div>
       </div>
 
       <!-- Thanh Dung Lượng -->
-      <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-700/60 space-y-2">
+      <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700/60 space-y-2">
         <div class="flex justify-between text-xs font-semibold">
           <span class="text-slate-300">📊 Dung lượng đã sử dụng:</span>
           <span id="storageUsageText" class="text-indigo-400 font-bold">0 MB / 10 GB (0%)</span>
         </div>
-        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
+        <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700">
           <div id="storageProgressBar" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full w-0 transition-all duration-300"></div>
         </div>
       </div>
     </div>
 
     <!-- Khung Upload & Tạo Thư Mục -->
-    <div class="bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-lg border border-slate-700 space-y-3">
+    <div class="bg-slate-800 p-6 rounded-2xl shadow-lg border border-slate-700 space-y-4">
       <div class="flex flex-col md:flex-row gap-3">
         <button onclick="createNewFolder()" class="bg-amber-600 hover:bg-amber-500 text-white font-semibold px-4 py-2.5 rounded-xl transition shadow-lg shadow-amber-600/20 whitespace-nowrap flex items-center justify-center gap-2 text-sm">
           ➕ Tạo Thư Mục
@@ -86,14 +84,14 @@
         <input type="file" id="fileInput" multiple class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 bg-slate-900 rounded-xl border border-slate-700 p-1 cursor-pointer">
 
         <button onclick="startBatchUploadQueue()" id="uploadBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-2.5 rounded-xl transition shadow-lg shadow-emerald-600/20 whitespace-nowrap flex items-center justify-center gap-2">
-          <span>📤 Tải Lên</span>
+          <span>📤 Tải Lên Kho</span>
         </button>
       </div>
 
-      <!-- Tiến Trình -->
+      <!-- Progress bar -->
       <div id="progressContainer" class="hidden space-y-2">
         <div class="flex justify-between text-xs text-slate-400">
-          <span id="statusText">Đang xử lý...</span>
+          <span id="statusText">Đang tải tệp...</span>
           <span id="percentText" class="font-bold text-emerald-400">0%</span>
         </div>
         <div class="w-full bg-slate-700 h-2.5 rounded-full overflow-hidden">
@@ -104,23 +102,17 @@
 
     <!-- Bảng Danh Sách File / Folder -->
     <div class="bg-slate-800 rounded-2xl shadow-lg border border-slate-700 overflow-hidden space-y-2">
-      <div class="bg-slate-900/60 px-4 sm:px-6 py-3 border-b border-slate-700 flex items-center justify-between text-sm text-slate-300 overflow-x-auto">
-        <div id="breadcrumbBar" class="flex items-center gap-2"></div>
-        
-        <button onclick="deleteSelectedItems()" id="deleteSelectedBtn" class="hidden text-xs bg-rose-600 hover:bg-rose-500 text-white font-semibold px-3 py-1.5 rounded-xl transition shadow-md flex items-center gap-1 whitespace-nowrap">
-          🗑️ Xóa Mục Đã Chọn (<span id="selectedCount">0</span>)
-        </button>
-      </div>
+      <div class="bg-slate-900/60 px-6 py-3 border-b border-slate-700 flex items-center gap-2 text-sm text-slate-300 overflow-x-auto" id="breadcrumbBar"></div>
 
       <div class="p-4 border-b border-slate-700 flex flex-col md:flex-row justify-between items-center gap-3">
-        <h2 class="font-bold text-slate-200 flex items-center gap-2 w-full md:w-auto">
+        <h2 class="font-bold text-slate-200 flex items-center gap-2">
           📂 Danh Sách Nội Dung 
           <span id="fileCountBadge" class="text-xs bg-slate-700 text-indigo-300 px-2 py-0.5 rounded-full">0</span>
         </h2>
 
         <div class="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
           <select id="filterType" onchange="filterFiles()" class="bg-slate-900 border border-slate-700 text-xs px-3 py-2 rounded-xl outline-none focus:border-indigo-500 w-full sm:w-auto">
-            <option value="all">🌐 Tất cả tệp</option>
+            <option value="all">🌐 Tất cả loại tệp</option>
             <option value="image">🖼️ Hình ảnh</option>
             <option value="document">📄 Tài liệu</option>
             <option value="archive">📦 File nén</option>
@@ -133,17 +125,14 @@
         <table class="w-full text-left text-sm text-slate-300">
           <thead class="bg-slate-900/50 text-slate-400 border-b border-slate-700 text-xs uppercase">
             <tr>
-              <th class="p-3 sm:p-4 w-10">
-                <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" class="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0 cursor-pointer">
-              </th>
-              <th class="p-3 sm:p-4">Tên tệp / thư mục</th>
-              <th class="p-3 sm:p-4">Dung lượng</th>
-              <th class="p-3 sm:p-4">Ngày tạo</th>
-              <th class="p-3 sm:p-4 text-right">Thao tác</th>
+              <th class="p-4">Tên tệp / thư mục</th>
+              <th class="p-4">Dung lượng</th>
+              <th class="p-4">Ngày cập nhật</th>
+              <th class="p-4 text-right">Thao tác</th>
             </tr>
           </thead>
           <tbody id="fileTableBody" class="divide-y divide-slate-700/50">
-            <tr><td colspan="5" class="p-6 text-center text-slate-500">Đang tải dữ liệu đồng bộ từ Telegram...</td></tr>
+            <tr><td colspan="4" class="p-6 text-center text-slate-500">Đang tải dữ liệu từ Đám Mây Telegram...</td></tr>
           </tbody>
         </table>
       </div>
@@ -157,21 +146,19 @@
     let BOT_TOKEN = localStorage.getItem('cur_token') || null;
     let CHAT_ID = localStorage.getItem('cur_chatid') || null;
 
-    const MAX_STORAGE_BYTES = 10 * 1024 * 1024 * 1024;
+    const MAX_STORAGE_BYTES = 10 * 1024 * 1024 * 1024; // 10GB
     let dbFiles = [];
-    let selectedFileIds = new Set();
     let currentFolderId = null;
 
     window.onload = async () => {
       if (CURRENT_MTB && BOT_TOKEN && CHAT_ID) {
         document.getElementById('loginScreen').classList.add('hidden');
-        document.getElementById('mainApp').classList.remove('hidden');
-        document.getElementById('userInfoBadge').innerText = `MTB: ${CURRENT_MTB}`;
-        await loadDatabaseFromTelegram(false);
+        document.getElementById('userInfoBadge').innerText = `Thiết bị: ${CURRENT_MTB}`;
+        await syncFromTelegram(false);
       }
     };
 
-    // ĐĂNG NHẬP GOOGLE SHEET
+    // ĐĂNG NHẬP
     async function loginWithGoogleSheet() {
       const mtb = document.getElementById('inputMTB').value.trim().toUpperCase();
       const mk = document.getElementById('inputMK').value.trim();
@@ -181,7 +168,7 @@
       if (!mtb || !mk) return alert("Vui lòng nhập đầy đủ Mã Thiết Bị và Mật Khẩu!");
 
       statusDiv.className = "text-xs text-center font-medium text-amber-400";
-      statusDiv.innerText = "⏳ Đang kết nối máy chủ...";
+      statusDiv.innerText = "⏳ Đang xác thực thông tin...";
       statusDiv.classList.remove('hidden');
       loginBtn.disabled = true;
 
@@ -217,9 +204,8 @@
 
           setTimeout(async () => {
             document.getElementById('loginScreen').classList.add('hidden');
-            document.getElementById('mainApp').classList.remove('hidden');
-            document.getElementById('userInfoBadge').innerText = `MTB: ${CURRENT_MTB}`;
-            await loadDatabaseFromTelegram(false);
+            document.getElementById('userInfoBadge').innerText = `Thiết bị: ${CURRENT_MTB}`;
+            await syncFromTelegram(false);
           }, 500);
 
         } else {
@@ -228,21 +214,21 @@
         }
       } catch (err) {
         statusDiv.className = "text-xs text-center font-medium text-rose-400";
-        statusDiv.innerText = "❌ Lỗi kết nối Google Sheet! Hãy kiểm tra lại mạng.";
+        statusDiv.innerText = "❌ Lỗi kết nối máy chủ Google Sheet!";
       } finally {
         loginBtn.disabled = false;
       }
     }
 
-    // ĐỌC CSDL CHÍNH XÁC 100% TỪ TELEGRAM PINNED MESSAGE (KHÔNG DÙNG GETUPDATES NỮA)
-    async function loadDatabaseFromTelegram(showAlert = true) {
+    // 🔄 ĐỒNG BỘ CHÍNH XÁC TỪ TELEGRAM PINNED MESSAGE (Dùng cho mọi thiết bị)
+    async function syncFromTelegram(showAlert = true) {
       if (!BOT_TOKEN || !CHAT_ID) return;
 
       const tbody = document.getElementById('fileTableBody');
-      if (showAlert) tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-amber-400">⏳ Đang tải cơ sở dữ liệu từ Telegram...</td></tr>`;
+      if (showAlert) tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-amber-400">⏳ Đang tải dữ liệu đám mây...</td></tr>`;
 
       try {
-        // Lấy thông tin tin nhắn được ghim trong chat
+        // 1. Lấy thông tin tin nhắn ghim trên Telegram Chat
         const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChat?chat_id=${CHAT_ID}`);
         const data = await res.json();
         
@@ -255,8 +241,8 @@
           }
         }
 
+        // 2. Nếu tìm thấy file ghim CSDL -> Tải dữ liệu JSON về
         if (foundDbFileId) {
-          // Tải file JSON được ghim về
           const fileRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${foundDbFileId}`);
           const fileData = await fileRes.json();
           if (fileData.ok) {
@@ -264,22 +250,21 @@
             dbFiles = await contentRes.json();
           }
         } else {
-          // Nếu chưa từng có CSDL ghim, khởi tạo CSDL rỗng
-          dbFiles = [];
+          dbFiles = []; // Chưa từng có CSDL nào được đẩy lên
         }
 
         renderBreadcrumb();
         renderFiles(getCurrentFolderItems());
         updateStorageUsage();
 
-        if (showAlert) alert("🎉 Đã đồng bộ dữ liệu thành công từ Telegram!");
+        if (showAlert) alert("🎉 Đồng bộ dữ liệu thành công từ Telegram!");
       } catch (e) {
         console.error(e);
-        if (showAlert) alert("❌ Không thể tải cơ sở dữ liệu!");
+        if (showAlert) alert("❌ Không thể đồng bộ từ Telegram!");
       }
     }
 
-    // GỬI FILE CSDL MỚI VÀ GHIM LẠI TRÊN TELEGRAM (ĐẢM BẢO KHÔNG BAO GIỜ MẤT)
+    // 📌 LƯU CƠ SỞ DỮ LIỆU LÊN TELEGRAM VÀ GHIM LẠI
     async function saveDatabaseToTelegram() {
       if (!BOT_TOKEN || !CHAT_ID) return;
 
@@ -290,9 +275,9 @@
         const formData = new FormData();
         formData.append('chat_id', CHAT_ID);
         formData.append('document', blob, `database_${CURRENT_MTB}.json`);
-        formData.append('caption', `📌 [SYS_DB_PINNED] Cập nhật CSDL lúc ${new Date().toLocaleString('vi-VN')}`);
+        formData.append('caption', `📌 [SYS_DB_PINNED] Cập nhật CSDL: ${new Date().toLocaleString('vi-VN')}`);
 
-        // 1. Gửi file JSON mới
+        // Gửi file CSDL mới
         const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
           method: 'POST',
           body: formData
@@ -300,7 +285,7 @@
 
         const data = await res.json();
         if (data.ok && data.result.message_id) {
-          // 2. GHIM TIN NHẮN CHỨA FILE CSDL NÀY LÊN ĐẦU KHUNG CHAT (BẮT BUỘC)
+          // Ghim tin nhắn CSDL này lên Telegram
           await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/pinChatMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -316,7 +301,27 @@
       }
     }
 
-    // TẢI FILE LÊN TELEGRAM
+    // TẠO THƯ MỤC
+    async function createNewFolder() {
+      const folderName = prompt("Nhập tên thư mục mới:");
+      if (!folderName || !folderName.trim()) return;
+
+      const newFolder = {
+        id: "folder_" + Date.now(),
+        name: folderName.trim(),
+        isFolder: true,
+        parentId: currentFolderId,
+        date: new Date().toLocaleString('vi-VN')
+      };
+
+      dbFiles.unshift(newFolder);
+      renderFiles(getCurrentFolderItems());
+      
+      // Lưu lại CSDL mới lên Đám Mây
+      await saveDatabaseToTelegram();
+    }
+
+    // TẢI TỆP LÊN
     async function startBatchUploadQueue() {
       const input = document.getElementById('fileInput');
       const files = Array.from(input.files);
@@ -347,13 +352,13 @@
         progressBar.style.width = percent + '%';
         percentText.innerText = percent + '%';
 
-        const uploaded = await uploadSingleFileOriginal(file);
+        const uploaded = await uploadSingleFile(file);
         if (uploaded) successCount++;
 
         await new Promise(r => setTimeout(r, 300));
       }
 
-      // Lưu lại toàn bộ CSDL mới và ghim lên Telegram
+      // Lưu lại CSDL đồng bộ lên Đám Mây Telegram
       await saveDatabaseToTelegram();
 
       uploadBtn.disabled = false;
@@ -366,11 +371,10 @@
       alert(`🎉 Đã tải lên ${successCount}/${files.length} tệp thành công!`);
     }
 
-    function uploadSingleFileOriginal(file) {
+    function uploadSingleFile(file) {
       return new Promise((resolve) => {
         const fileItemTemp = {
-          id: "file_" + Date.now() + "_" + Math.floor(Math.random()*1000),
-          realName: file.name,
+          id: "",
           name: file.name,
           size: file.size,
           isFolder: false,
@@ -390,9 +394,8 @@
         .then(res => res.json())
         .then(data => {
           if (data.ok) {
-            fileItemTemp.tg_file_id = data.result.document.file_id;
+            fileItemTemp.id = data.result.document.file_id;
             fileItemTemp.msg_id = data.result.message_id;
-            
             dbFiles.unshift(fileItemTemp);
             resolve(true);
           } else resolve(false);
@@ -401,196 +404,41 @@
       });
     }
 
-    // GOM ZIP
-    async function downloadAllAsZip() {
-      const onlyFiles = dbFiles.filter(item => !item.isFolder);
-      if (onlyFiles.length === 0) return alert("❌ Không có file nào để gom nén!");
-
-      if (!confirm(`Bạn có muốn gom nén và tải về ${onlyFiles.length} file dạng ZIP?`)) return;
-
-      const zip = new JSZip();
-      const zipBtn = document.getElementById('zipBtn');
-      const originalText = zipBtn.innerHTML;
-      
-      zipBtn.disabled = true;
-      let successCount = 0;
-
-      for (let i = 0; i < onlyFiles.length; i++) {
-        const item = onlyFiles[i];
-        const tgId = item.tg_file_id || item.id;
-        const fileName = item.realName || item.name;
-
-        zipBtn.innerHTML = `⏳ Tải (${i + 1}/${onlyFiles.length})...`;
-
-        try {
-          const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${tgId}`);
-          const data = await res.json();
-
-          if (data.ok) {
-            const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${data.result.file_path}`;
-            const fileData = await fetch(fileUrl).then(r => r.blob());
-            zip.file(fileName, fileData);
-            successCount++;
-          }
-        } catch (err) {}
-
-        await new Promise(r => setTimeout(r, 200));
-      }
-
-      if (successCount === 0) {
-        alert("❌ Không tải được file từ Telegram!");
-        zipBtn.disabled = false;
-        zipBtn.innerHTML = originalText;
-        return;
-      }
-
-      zipBtn.innerHTML = "📦 Đang nén ZIP...";
-      
-      zip.generateAsync({ type: "blob" }).then(function(content) {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(content);
-        a.download = `KhoDuLieu_${CURRENT_MTB}_${Date.now()}.zip`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-
-        zipBtn.disabled = false;
-        zipBtn.innerHTML = originalText;
-      });
-    }
-
-    // XÓA TRÊN TELEGRAM VÀ CẬP NHẬT
-    async function deleteTelegramMessage(msgId) {
-      if (!msgId) return;
-      try {
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: CHAT_ID, message_id: msgId })
-        });
-      } catch (e) {}
-    }
-
+    // XÓA MỤC
     async function deleteSingleItem(id) {
       const item = dbFiles.find(f => f.id === id);
       if (!item) return;
 
-      if (!confirm(`Xóa vĩnh viễn "${item.realName || item.name}"?`)) return;
+      if (!confirm(`Xóa vĩnh viễn "${item.name}"?`)) return;
 
-      if (item.msg_id) await deleteTelegramMessage(item.msg_id);
-
-      dbFiles = dbFiles.filter(f => f.id !== id);
-      selectedFileIds.delete(id);
-
-      await saveDatabaseToTelegram();
-
-      renderFiles(getCurrentFolderItems());
-      updateStorageUsage();
-      updateSelectedCount();
-    }
-
-    async function deleteSelectedItems() {
-      if (selectedFileIds.size === 0) return;
-
-      if (!confirm(`XÓA VĨNH VIỄN ${selectedFileIds.size} mục đã chọn?`)) return;
-
-      const deleteBtn = document.getElementById('deleteSelectedBtn');
-      deleteBtn.disabled = true;
-      deleteBtn.innerText = "⏳ Đang xóa...";
-
-      const idsToDelete = Array.from(selectedFileIds);
-
-      for (let i = 0; i < idsToDelete.length; i++) {
-        const id = idsToDelete[i];
-        const item = dbFiles.find(f => f.id === id);
-        
-        if (item && item.msg_id) {
-          await deleteTelegramMessage(item.msg_id);
-        }
-
-        dbFiles = dbFiles.filter(f => f.id !== id);
-        selectedFileIds.delete(id);
-
-        await new Promise(r => setTimeout(r, 150));
+      // Xóa trên Telegram nếu có msg_id
+      if (item.msg_id) {
+        fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: CHAT_ID, message_id: item.msg_id })
+        }).catch(() => {});
       }
 
-      await saveDatabaseToTelegram();
-
-      deleteBtn.disabled = false;
-      document.getElementById('selectAllCheckbox').checked = false;
-
+      dbFiles = dbFiles.filter(f => f.id !== id);
       renderFiles(getCurrentFolderItems());
       updateStorageUsage();
-      updateSelectedCount();
-      alert("🎉 Đã xóa sạch các mục đã chọn!");
-    }
 
-    // TẠO THƯ MỤC
-    async function createNewFolder() {
-      const folderName = prompt("Nhập tên thư mục mới:");
-      if (!folderName || !folderName.trim()) return;
-
-      const newFolder = {
-        id: "folder_" + Date.now() + "_" + Math.floor(Math.random()*1000),
-        name: folderName.trim(),
-        isFolder: true,
-        parentId: currentFolderId,
-        date: new Date().toLocaleString('vi-VN')
-      };
-
-      dbFiles.unshift(newFolder);
+      // Đồng bộ bản ghi mới sau khi xóa lên Telegram
       await saveDatabaseToTelegram();
-      renderFiles(getCurrentFolderItems());
     }
 
-    function toggleSelectAll(master) {
-      const currentItems = getCurrentFolderItems();
-      currentItems.forEach(item => {
-        if (master.checked) selectedFileIds.add(item.id);
-        else selectedFileIds.delete(item.id);
-      });
-
-      renderFiles(currentItems);
-      updateSelectedCount();
-    }
-
-    function toggleSelectItem(id) {
-      if (selectedFileIds.has(id)) selectedFileIds.delete(id);
-      else selectedFileIds.add(id);
-
-      updateSelectedCount();
-    }
-
-    function updateSelectedCount() {
-      const btn = document.getElementById('deleteSelectedBtn');
-      const countLabel = document.getElementById('selectedCount');
-      
-      countLabel.innerText = selectedFileIds.size;
-      if (selectedFileIds.size > 0) btn.classList.remove('hidden');
-      else btn.classList.add('hidden');
-    }
-
+    // TẢI TỆP VỀ MÁY
     async function downloadFile(fileId) {
-      const item = dbFiles.find(f => f.id === fileId);
-      if (!item) return alert("Không tìm thấy tệp!");
-
-      const tgId = item.tg_file_id || item.id;
-
       try {
-        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${tgId}`);
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId}`);
         const data = await res.json();
         if (data.ok) {
           const downloadUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${data.result.file_path}`;
-          const a = document.createElement('a');
-          a.href = downloadUrl;
-          a.download = item.realName || item.name;
-          a.target = '_blank';
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        } else alert("Không lấy được đường dẫn từ Telegram!");
+          window.open(downloadUrl, '_blank');
+        } else alert("Không lấy được đường dẫn tải từ Telegram!");
       } catch {
-        alert("Lỗi tải tệp!");
+        alert("Lỗi kết nối tải tệp!");
       }
     }
 
@@ -600,9 +448,6 @@
 
     function openFolder(folderId) {
       currentFolderId = folderId;
-      selectedFileIds.clear();
-      document.getElementById('selectAllCheckbox').checked = false;
-      updateSelectedCount();
       renderBreadcrumb();
       renderFiles(getCurrentFolderItems());
     }
@@ -635,46 +480,37 @@
       document.getElementById('fileCountBadge').innerText = items.length;
 
       if (items.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500">Thư mục trống.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-500">Thư mục trống.</td></tr>`;
         return;
       }
 
       const sortedItems = [...items].sort((a, b) => (b.isFolder ? 1 : 0) - (a.isFolder ? 1 : 0));
 
       tbody.innerHTML = sortedItems.map(item => {
-        const displayName = item.realName || item.name;
-        const isChecked = selectedFileIds.has(item.id) ? 'checked' : '';
-
         if (item.isFolder) {
           return `
             <tr class="hover:bg-slate-700/30 transition cursor-pointer">
-              <td class="p-3 sm:p-4" onclick="event.stopPropagation()">
-                <input type="checkbox" onchange="toggleSelectItem('${item.id}')" ${isChecked} class="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0 cursor-pointer">
+              <td class="p-4 font-semibold text-amber-400 flex items-center gap-2" onclick="openFolder('${item.id}')">
+                📁 <span class="truncate max-w-xs hover:underline">${item.name}</span>
               </td>
-              <td class="p-3 sm:p-4 font-semibold text-amber-400 flex items-center gap-2" onclick="openFolder('${item.id}')">
-                📁 <span class="truncate max-w-[150px] sm:max-w-xs hover:underline">${displayName}</span>
-              </td>
-              <td class="p-3 sm:p-4 text-slate-500 text-xs">--</td>
-              <td class="p-3 sm:p-4 text-slate-400 text-xs">${item.date}</td>
-              <td class="p-3 sm:p-4 text-right space-x-1 sm:space-x-2" onclick="event.stopPropagation()">
-                <button onclick="openFolder('${item.id}')" class="bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-xl text-xs font-semibold">📂 Mở</button>
-                <button onclick="deleteSingleItem('${item.id}')" class="bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 px-2 py-1 rounded-xl text-xs font-semibold">🗑️ Xóa</button>
+              <td class="p-4 text-slate-500 text-xs">--</td>
+              <td class="p-4 text-slate-400 text-xs">${item.date}</td>
+              <td class="p-4 text-right space-x-2" onclick="event.stopPropagation()">
+                <button onclick="openFolder('${item.id}')" class="bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-semibold">📂 Mở</button>
+                <button onclick="deleteSingleItem('${item.id}')" class="bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 px-2.5 py-1.5 rounded-xl text-xs font-semibold">🗑️ Xóa</button>
               </td>
             </tr>`;
         } else {
           return `
             <tr class="hover:bg-slate-700/30 transition">
-              <td class="p-3 sm:p-4">
-                <input type="checkbox" onchange="toggleSelectItem('${item.id}')" ${isChecked} class="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0 cursor-pointer">
+              <td class="p-4 font-medium flex items-center gap-2">
+                ${getFileIcon(item.name)} <span class="truncate max-w-xs" title="${item.name}">${item.name}</span>
               </td>
-              <td class="p-3 sm:p-4 font-medium flex items-center gap-2">
-                ${getFileIcon(displayName)} <span class="truncate max-w-[130px] sm:max-w-xs" title="${displayName}">${displayName}</span>
-              </td>
-              <td class="p-3 sm:p-4 text-slate-400 text-xs">${formatBytes(item.size)}</td>
-              <td class="p-3 sm:p-4 text-slate-400 text-xs">${item.date}</td>
-              <td class="p-3 sm:p-4 text-right space-x-1 sm:space-x-2">
-                <button onclick="downloadFile('${item.id}')" class="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 px-2.5 py-1 rounded-xl text-xs font-semibold">⬇️ Tải</button>
-                <button onclick="deleteSingleItem('${item.id}')" class="bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 px-2 py-1 rounded-xl text-xs font-semibold">🗑️ Xóa</button>
+              <td class="p-4 text-slate-400 text-xs">${formatBytes(item.size)}</td>
+              <td class="p-4 text-slate-400 text-xs">${item.date}</td>
+              <td class="p-4 text-right space-x-2">
+                <button onclick="downloadFile('${item.id}')" class="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 px-3 py-1.5 rounded-xl text-xs font-semibold">⬇️ Tải về</button>
+                <button onclick="deleteSingleItem('${item.id}')" class="bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 px-2.5 py-1.5 rounded-xl text-xs font-semibold">🗑️ Xóa</button>
               </td>
             </tr>`;
         }
@@ -684,7 +520,7 @@
     function filterFiles() {
       const search = document.getElementById('searchInput').value.toLowerCase();
       const currentItems = getCurrentFolderItems();
-      const filtered = currentItems.filter(f => (f.realName || f.name).toLowerCase().includes(search));
+      const filtered = currentItems.filter(f => f.name.toLowerCase().includes(search));
       renderFiles(filtered);
     }
 
@@ -704,7 +540,7 @@
     }
 
     function parseCSV(text) {
-      const lines = text.split(/\r\n|\n/);
+      let lines = text.split('\n');
       return lines.map(line => line.split(',').map(cell => cell.replace(/^"(.*)"$/, '$1').trim()));
     }
 
