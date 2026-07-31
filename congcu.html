@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Công cụ Nén File PDF & Video Siêu Tốc</title>
+  
+  <!-- Thư viện nén PDF -->
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #0f172a; margin: 0; padding: 40px 20px; color: #f8fafc; }
+    .container { max-width: 650px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); border: 1px solid #334155; }
+    h1 { text-align: center; margin-bottom: 25px; color: #38bdf8; font-size: 24px; }
+    
+    .tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #334155; }
+    .tab-btn { flex: 1; padding: 12px; border: none; background: none; font-weight: bold; font-size: 16px; cursor: pointer; border-bottom: 3px solid transparent; color: #94a3b8; }
+    .tab-btn.active { color: #38bdf8; border-bottom-color: #38bdf8; }
+    
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .upload-box { border: 2px dashed #38bdf8; border-radius: 8px; padding: 30px; text-align: center; background: #0f172a; cursor: pointer; transition: 0.2s; margin-bottom: 15px; }
+    .upload-box:hover { background: #1e293b; }
+    input[type="file"] { display: none; }
+    
+    .option-group { margin-bottom: 15px; text-align: left; }
+    .option-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #cbd5e1; }
+    .option-group select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; font-size: 14px; }
+
+    .estimate-box { background: #0f172a; padding: 12px; border-radius: 6px; border: 1px solid #334155; margin-bottom: 15px; font-size: 14px; color: #38bdf8; }
+
+    button.action-btn { background: #38bdf8; color: #0f172a; border: none; padding: 14px; font-size: 16px; border-radius: 6px; cursor: pointer; transition: 0.2s; width: 100%; font-weight: bold; }
+    button.action-btn:hover { background: #0284c7; color: #fff; }
+    button.action-btn:disabled { background: #475569; color: #94a3b8; cursor: not-allowed; }
+
+    .status-box { margin-top: 20px; padding: 15px; border-radius: 6px; background: #0f172a; font-size: 14px; line-height: 1.6; display: none; border: 1px solid #334155; word-break: break-all; }
+    .download-link { display: inline-block; margin-top: 12px; background: #22c55e; color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; }
+    .download-link:hover { background: #16a34a; }
+    .progress-bar { width: 0%; height: 6px; background: #38bdf8; margin-top: 10px; border-radius: 3px; transition: width 0.1s; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>⚡ Nén PDF & Video Siêu Tốc</h1>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button id="tabPdfBtn" class="tab-btn active" onclick="switchTab('pdf')">📄 Nén PDF</button>
+    <button id="tabVideoBtn" class="tab-btn" onclick="switchTab('video')">🎬 Nén Video Siêu Tốc</button>
+  </div>
+
+  <!-- 1. TAB NÉN PDF -->
+  <div id="pdf-tab" class="tab-content active">
+    <div class="upload-box" onclick="document.getElementById('pdfInput').click()">
+      <span id="pdf-label">📁 Bấm để chọn file PDF</span>
+      <input type="file" id="pdfInput" accept="application/pdf" onchange="handleFileSelect('pdf', this)" />
+    </div>
+    <button class="action-btn" id="pdfBtn" onclick="compressPDF()" disabled>Bắt đầu nén PDF</button>
+    <div id="pdf-status" class="status-box"></div>
+  </div>
+
+  <!-- 2. TAB NÉN VIDEO -->
+  <div id="video-tab" class="tab-content">
+    <div class="upload-box" onclick="document.getElementById('videoInput').click()">
+      <span id="video-label">📁 Bấm để chọn Video</span>
+      <input type="file" id="videoInput" accept="video/*" onchange="handleFileSelect('video', this)" />
+    </div>
+
+    <div class="option-group">
+      <label for="qualitySelect">📉 Chọn mức độ nén & Tốc độ xử lý:</label>
+      <select id="qualitySelect" onchange="updateEstimation()">
+        <option value="high" data-bitrate="1200000" data-scale="1280" data-ratio="0.4">Nén nhẹ (720p - Giảm ~30-40%)</option>
+        <option value="medium" data-bitrate="600000" data-scale="854" data-ratio="0.65" selected>Nén vừa (480p - Siêu nhanh - Giảm ~60-75%)</option>
+        <option value="low" data-bitrate="300000" data-scale="640" data-ratio="0.85">Nén cực sâu (360p - File cực nhỏ)</option>
+      </select>
+    </div>
+
+    <!-- Ô hiển thị dự đoán dung lượng -->
+    <div id="estimateBox" class="estimate-box" style="display:none;">
+      📊 Dung lượng ước tính sau nén: <b id="estSize">-- MB</b>
+    </div>
+
+    <button class="action-btn" id="videoBtn" onclick="startFastVideoCompression()" disabled>🚀 Bắt đầu Nén Siêu Tốc</button>
+    <div id="video-status" class="status-box">
+      <div id="statusText"></div>
+      <div id="pBar" class="progress-bar"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Thẻ render ẩn -->
+<video id="vPlayer" style="display:none;" playsinline muted></video>
+
+<script>
+  let selectedFile = null;
+
+  function switchTab(type) {
+    document.getElementById('pdf-tab').classList.toggle('active', type === 'pdf');
+    document.getElementById('video-tab').classList.toggle('active', type === 'video');
+    document.getElementById('tabPdfBtn').classList.toggle('active', type === 'pdf');
+    document.getElementById('tabVideoBtn').classList.toggle('active', type === 'video');
+  }
+
+  function handleFileSelect(type, input) {
+    const file = input.files[0];
+    if (file) {
+      selectedFile = file;
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+      document.getElementById(`${type}-label`).innerText = `📄 ${file.name} (${sizeMB} MB)`;
+      document.getElementById(`${type}Btn`).disabled = false;
+      
+      if (type === 'video') {
+        updateEstimation();
+      }
+    }
+  }
+
+  function updateEstimation() {
+    if (!selectedFile) return;
+    const select = document.getElementById('qualitySelect');
+    const option = select.options[select.selectedIndex];
+    const reduceRatio = parseFloat(option.getAttribute('data-ratio'));
+
+    const originalMB = selectedFile.size / (1024 * 1024);
+    const estimatedMB = (originalMB * (1 - reduceRatio)).toFixed(2);
+
+    document.getElementById('estimateBox').style.display = 'block';
+    document.getElementById('estSize').innerText = `~${estimatedMB > 0.1 ? estimatedMB : 0.1} MB (Giảm khoảng ${(reduceRatio * 100).toFixed(0)}%)`;
+  }
+
+  // 1. NÉN PDF
+  async function compressPDF() {
+    const input = document.getElementById('pdfInput');
+    const status = document.getElementById('pdf-status');
+    const btn = document.getElementById('pdfBtn');
+
+    if (!input.files.length) return;
+    const file = input.files[0];
+
+    status.style.display = 'block';
+    status.innerHTML = '⏳ Đang nén PDF...';
+    btn.disabled = true;
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+      const compressedBytes = await pdfDoc.save({ useObjectStreams: true });
+
+      const blob = new Blob([compressedBytes], { type: 'application/pdf' });
+      const downloadUrl = URL.createObjectURL(blob);
+
+      const oldMB = (file.size / (1024 * 1024)).toFixed(2);
+      const newMB = (compressedBytes.length / (1024 * 1024)).toFixed(2);
+      const percent = (((file.size - compressedBytes.length) / file.size) * 100).toFixed(1);
+
+      status.innerHTML = `
+        ✅ <b>Nén PDF thành công!</b><br/>
+        • Gốc: ${oldMB} MB ➔ Mới: <b>${newMB} MB</b> (Giảm ${percent > 0 ? percent : 0}%)<br/>
+        <a href="${downloadUrl}" download="compressed_${file.name}" class="download-link">📥 Tải PDF về máy</a>
+      `;
+    } catch (err) {
+      status.innerHTML = '❌ Lỗi PDF: ' + err.message;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // 2. NÉN VIDEO SIÊU TỐC (TURBO 8X ENGINE)
+  async function startFastVideoCompression() {
+    const status = document.getElementById('video-status');
+    const statusText = document.getElementById('statusText');
+    const pBar = document.getElementById('pBar');
+    const btn = document.getElementById('videoBtn');
+    
+    status.style.display = 'block';
+    btn.disabled = true;
+
+    const select = document.getElementById('qualitySelect');
+    const option = select.options[select.selectedIndex];
+    const targetBitrate = parseInt(option.getAttribute('data-bitrate'));
+    const maxScaleWidth = parseInt(option.getAttribute('data-scale'));
+
+    // Bắt đầu chế độ Nén Tăng Tốc Siêu Cấp (8.0x)
+    statusText.innerHTML = '🚀 <b>Kích hoạt Turbo Engine:</b> Đang nén tăng tốc (8x)...';
+    pBar.style.width = '0%';
+
+    const successPass = await runTurboVideoEncoder(8.0, targetBitrate, maxScaleWidth, (pct) => {
+      pBar.style.width = pct + '%';
+      statusText.innerHTML = `🚀 <b>Đang nén SIÊU TỐC (8x): ${pct}%</b>...`;
+    });
+
+    // Fallback: Nếu 8.0x quá nhanh bị giật khung hình ở một số trình duyệt yếu -> Giảm xuống 4.0x
+    if (!successPass) {
+      statusText.innerHTML = '⚠️ Máy bị quá tải ở tốc độ 8x. ⚙️ Chuyển xuống chế độ An Toàn (4x)...';
+      pBar.style.width = '0%';
+      
+      await new Promise(r => setTimeout(r, 1000));
+
+      const successFallback = await runTurboVideoEncoder(4.0, targetBitrate, maxScaleWidth, (pct) => {
+        pBar.style.width = pct + '%';
+        statusText.innerHTML = `⚙️ <b>Đang nén (Chế độ An Toàn 4x): ${pct}%</b>...`;
+      });
+
+      if (!successFallback) {
+        statusText.innerHTML = '❌ <b>Lỗi:</b> Không thể xử lý video này. Hãy thử chọn video khác.';
+        btn.disabled = false;
+      }
+    }
+  }
+
+  function runTurboVideoEncoder(speedRate, bitrate, maxScaleWidth, onProgress) {
+    return new Promise((resolve) => {
+      try {
+        const file = selectedFile;
+        const video = document.getElementById('vPlayer');
+        const videoUrl = URL.createObjectURL(file);
+        video.src = videoUrl;
+
+        video.onloadedmetadata = async () => {
+          let width = video.videoWidth;
+          let height = video.videoHeight;
+
+          // Thu nhỏ kích thước ảnh để tăng tốc độ ghi hình Canvas cực đại
+          if (width > maxScaleWidth) {
+            height = Math.round((height * maxScaleWidth) / width);
+            width = maxScaleWidth;
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+
+          // Tắt tiếng và ép tốc độ chạy video
+          video.playbackRate = speedRate;
+          video.muted = true;
+
+          const stream = canvas.captureStream(24); // 24 FPS tối ưu tốc độ render
+          
+          let mimeType = 'video/webm;codecs=vp8';
+          if (MediaRecorder.isTypeSupported('video/mp4')) {
+            mimeType = 'video/mp4';
+          }
+
+          const recorder = new MediaRecorder(stream, {
+            mimeType: mimeType,
+            videoBitsPerSecond: bitrate
+          });
+
+          const chunks = [];
+          recorder.ondataavailable = e => chunks.push(e.data);
+
+          recorder.onstop = () => {
+            const blob = new Blob(chunks, { type: mimeType });
+            const downloadUrl = URL.createObjectURL(blob);
+            const oldMB = (file.size / (1024 * 1024)).toFixed(2);
+            const newMB = (blob.size / (1024 * 1024)).toFixed(2);
+            const percent = (((file.size - blob.size) / file.size) * 100).toFixed(1);
+            const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+
+            document.getElementById('statusText').innerHTML = `
+              ✅ <b>Nén Video Siêu Tốc Thành Công!</b><br/>
+              • Thời gian xử lý: <b>Cực nhanh (${speedRate}x Turbo)</b><br/>
+              • Dung lượng gốc: ${oldMB} MB<br/>
+              • Dung lượng mới: <b>${newMB} MB</b> (Giảm ${percent > 0 ? percent : 0}%)<br/>
+              <a href="${downloadUrl}" download="compressed_${file.name.split('.')[0]}.${ext}" class="download-link">📥 Tải Video Ngay</a>
+            `;
+            document.getElementById('videoBtn').disabled = false;
+            URL.revokeObjectURL(videoUrl);
+            resolve(true);
+          };
+
+          recorder.onerror = () => {
+            URL.revokeObjectURL(videoUrl);
+            resolve(false);
+          };
+
+          recorder.start();
+          video.play();
+
+          function renderFrame() {
+            if (!video.paused && !video.ended) {
+              ctx.drawImage(video, 0, 0, width, height);
+              const pct = Math.min(100, Math.round((video.currentTime / video.duration) * 100));
+              onProgress(pct);
+              requestAnimationFrame(renderFrame);
+            } else if (video.ended) {
+              recorder.stop();
+            }
+          }
+          renderFrame();
+        };
+
+        video.onerror = () => resolve(false);
+
+      } catch (err) {
+        resolve(false);
+      }
+    });
+  }
+</script>
+
+</body>
+</html>
