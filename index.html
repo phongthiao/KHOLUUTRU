@@ -81,10 +81,15 @@
         <div class="flex flex-wrap items-center gap-2">
           <span id="userInfoBadge" class="text-xs bg-indigo-500/20 text-indigo-300 px-3 py-2 rounded-xl border border-indigo-500/30 font-mono">Thiết bị: ...</span>
 
-          <label class="text-xs bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/30 px-3 py-2 rounded-xl transition font-semibold cursor-pointer flex items-center gap-1">
-            📥 Nhập Bản Lưu
-            <input type="file" id="importJsonInput" accept=".json" onchange="importBackup(event)" class="hidden">
-          </label>
+          <!-- Công cụ nén file PDF & Video -->
+          <a href="congcu.html" class="text-xs bg-teal-600/20 hover:bg-teal-600/40 text-teal-300 border border-teal-500/30 px-3 py-2 rounded-xl transition font-semibold flex items-center gap-1">
+            🛠️ Công Cụ Nén PDF & Video
+          </a>
+
+          <!-- Xem Kho Ảnh (Liên kết Bot Telegram) -->
+          <button onclick="openTelegramBot()" class="text-xs bg-sky-600/20 hover:bg-sky-600/40 text-sky-300 border border-sky-500/30 px-3 py-2 rounded-xl transition font-semibold flex items-center gap-1">
+            🖼️ Xem Kho Ảnh
+          </button>
 
           <button onclick="openBackupHistoryModal()" class="text-xs bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/30 px-3 py-2 rounded-xl transition font-semibold flex items-center gap-1">
             📜 Bản Cập Nhật
@@ -175,14 +180,9 @@
           </button>
         </div>
 
-        <div class="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
-          <select id="filterType" onchange="filterFiles()" class="bg-slate-900 border border-slate-700 text-xs px-3 py-2 rounded-xl outline-none focus:border-indigo-500 w-full sm:w-auto">
-            <option value="all">🌐 Tất cả loại tệp</option>
-            <option value="image">🖼️ Hình ảnh</option>
-            <option value="document">📄 Tài liệu</option>
-            <option value="archive">📦 File nén</option>
-          </select>
-          <input type="text" id="searchInput" oninput="filterFiles()" placeholder="🔍 Tìm tên..." class="bg-slate-900 border border-slate-700 text-xs px-3 py-2 rounded-xl outline-none focus:border-indigo-500 w-full sm:w-48">
+        <!-- Đã xóa bộ lọc phân loại, chỉ giữ lại ô Tìm kiếm -->
+        <div class="flex items-center gap-2 w-full md:w-auto">
+          <input type="text" id="searchInput" oninput="filterFiles()" placeholder="🔍 Tìm tên tệp..." class="bg-slate-900 border border-slate-700 text-xs px-3 py-2 rounded-xl outline-none focus:border-indigo-500 w-full sm:w-64">
         </div>
       </div>
 
@@ -253,7 +253,6 @@
     let CHAT_ID = localStorage.getItem('cur_chatid') || null;
 
     const MAX_STORAGE_BYTES = 100 * 1024 * 1024 * 1024; 
-    // ĐIỀU CHỈNH GIỚI HẠN DUNG LƯỢNG MỖI FILE TỐI ĐA: 20 MB
     const MAX_SINGLE_FILE_BYTES = 20 * 1024 * 1024; 
 
     let dbFiles = [];
@@ -334,6 +333,24 @@
 
     function closeWarningModal() {
       document.getElementById('warningModal').classList.add('hidden');
+    }
+
+    // CHỨC NĂNG MỞ CHAT VỚI BOT TELEGRAM TỰ ĐỘNG
+    async function openTelegramBot() {
+      if (!BOT_TOKEN) return alert("Vui lòng đăng nhập trước!");
+      
+      try {
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getMe`);
+        const data = await res.json();
+        
+        if (data.ok && data.result.username) {
+          window.open(`https://t.me/${data.result.username}`, '_blank');
+        } else {
+          alert("❌ Không tìm thấy thông tin Bot Telegram!");
+        }
+      } catch (e) {
+        alert("❌ Lỗi khi lấy thông tin Bot Telegram!");
+      }
     }
 
     async function autoFetchLatestBackupOnStart() {
@@ -440,14 +457,12 @@
       } catch (err) {}
     }
 
-    // TẢI FILE VỚI GIỚI HẠN DUNG LƯỢNG 20 MB
     async function startBatchUploadQueue() {
       const input = document.getElementById('fileInput');
       const files = Array.from(input.files);
 
       if (files.length === 0) return alert("Vui lòng chọn tệp cần tải lên!");
 
-      // Kiểm tra dung lượng tối đa 20 MB
       const oversizedFiles = files.filter(f => f.size > MAX_SINGLE_FILE_BYTES);
       if (oversizedFiles.length > 0) {
         alert(`❌ Có ${oversizedFiles.length} tệp vượt quá giới hạn 20 MB! Vui lòng chọn tệp nhỏ hơn 20 MB.`);
@@ -554,7 +569,6 @@
       });
     }
 
-    // LẤY URL TẢI/XEM TRỰC TIẾP TỪ LƯU TRỮ
     async function getDirectFileUrl(fileId) {
       try {
         const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId}`);
@@ -566,7 +580,6 @@
       return null;
     }
 
-    // CHỨC NĂNG XEM FILE (PREVIEW)
     async function previewFile(fileId, fileName) {
       const modal = document.getElementById('previewModal');
       const title = document.getElementById('previewTitle');
@@ -618,7 +631,6 @@
       document.getElementById('previewModal').classList.add('hidden');
     }
 
-    // CHỨC NĂNG TẢI FILE XUỐNG MÁY
     async function downloadFile(fileId, fileName) {
       try {
         const url = await getDirectFileUrl(fileId);
@@ -636,7 +648,6 @@
       }
     }
 
-    // CHỨC NĂNG TẢI NHIỀU FILE ĐÃ CHỌN
     async function downloadSelectedItems() {
       const checkedBoxes = Array.from(document.querySelectorAll('.item-checkbox:checked'));
       if (checkedBoxes.length === 0) return;
@@ -696,7 +707,6 @@
       document.getElementById('progressModal').classList.add('hidden');
     }
 
-    // CHỨC NĂNG XÓA NHIỀU FILE ĐÃ CHỌN
     async function deleteSelectedItems() {
       const checkedBoxes = Array.from(document.querySelectorAll('.item-checkbox:checked'));
       if (checkedBoxes.length === 0) return;
@@ -897,31 +907,7 @@
       }
     }
 
-    function importBackup(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = async function(e) {
-        try {
-          const importedData = JSON.parse(e.target.result);
-          if (Array.isArray(importedData)) {
-            if (confirm(`Nhập ${importedData.length} mục vào danh sách?`)) {
-              dbFiles = importedData;
-              renderBreadcrumb();
-              renderFiles(getCurrentFolderItems());
-              updateStorageUsage();
-              await autoTriggerAllBackups();
-              alert("🎉 Đồng bộ tệp thành công!");
-            }
-          }
-        } catch (err) {
-          alert("❌ Tệp không đúng định dạng!");
-        }
-      };
-      reader.readAsText(file);
-    }
-
+    // CHỨC NĂNG LỌC FILE DỰA TRÊN TỪ KHÓA TÌM KIẾM
     function filterFiles() {
       const search = document.getElementById('searchInput').value.toLowerCase();
       const currentItems = getCurrentFolderItems();
