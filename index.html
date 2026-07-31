@@ -3,23 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hệ Thống Lưu Trữ Đám Mây Cloud Pro</title>
+  <title>Kho Dữ Liệu Đám Mây Cloud Pro</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen p-3 sm:p-6 font-sans select-none">
+<body class="bg-slate-900 text-slate-100 min-h-screen p-3 sm:p-6 font-sans">
 
-  <!-- MÀN HÌNH ĐĂNG NHẬP -->
+  <!-- ==================== MÀN HÌNH ĐĂNG NHẬP ==================== -->
   <div id="loginScreen" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md flex items-center justify-center z-50 p-4">
     <div class="bg-slate-800 p-6 sm:p-8 rounded-2xl border border-slate-700 max-w-md w-full space-y-4 shadow-2xl">
       <div class="text-center space-y-1">
         <div class="text-4xl">🔐</div>
         <h2 class="text-xl font-bold text-indigo-400">Đăng Nhập Kho Dữ Liệu</h2>
-        <p class="text-xs text-slate-400">Hệ thống bảo vệ mã hóa dữ liệu đa tầng</p>
+        <p class="text-xs text-slate-400">Nhập thông tin thuê bao để truy cập</p>
       </div>
       
       <div class="space-y-3">
         <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">Mã thiết bị (MTB):</label>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Mã thiết bị / User (MTB):</label>
           <input type="text" id="inputMTB" placeholder="Ví dụ: KH001" class="w-full bg-slate-900 border border-slate-700 text-sm px-4 py-2.5 rounded-xl outline-none focus:border-indigo-500 font-mono uppercase">
         </div>
         <div>
@@ -36,15 +36,14 @@
     </div>
   </div>
 
-  <!-- GIAO DIỆN CHÍNH -->
-  <div class="max-w-5xl mx-auto space-y-5">
-    
+  <!-- ==================== GIAO DIỆN CHÍNH ==================== -->
+  <div id="mainApp" class="max-w-5xl mx-auto space-y-5 hidden">
     <!-- Header -->
     <div class="bg-slate-800 p-4 sm:p-6 rounded-2xl shadow-lg border border-slate-700 space-y-4">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
-          <h1 class="text-xl sm:text-2xl font-bold text-indigo-400 flex items-center gap-2">⚡ Kho Đám Mây An Toàn</h1>
-          <p class="text-xs text-slate-400 mt-0.5">Tệp tin đã được mã hóa chống quét Telegram</p>
+          <h1 class="text-xl sm:text-2xl font-bold text-indigo-400 flex items-center gap-2">⚡ Kho Đám Mây Cá Nhân</h1>
+          <p class="text-xs text-slate-400 mt-0.5">Tệp tin đã được mã hóa an toàn</p>
         </div>
         
         <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
@@ -69,9 +68,9 @@
         </div>
       </div>
 
-      <!-- Khung Sao Lưu & Khôi Phục Trên Điện Thoại -->
+      <!-- Khung Sao Lưu Cho Điện Thoại -->
       <div class="bg-slate-900/50 p-3 rounded-xl border border-slate-700/40 flex flex-col sm:flex-row justify-between items-center gap-2 text-xs">
-        <span class="text-slate-400 font-medium">📱 Công cụ Sao Lưu Điện Thoại:</span>
+        <span class="text-slate-400 font-medium">📱 Sao lưu cấu trúc file điện thoại:</span>
         <div class="flex items-center gap-2 w-full sm:w-auto">
           <button onclick="exportBackupJSON()" class="flex-1 sm:flex-none bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/30 px-3 py-1.5 rounded-lg transition font-medium">
             📥 Tải Bản Sao Lưu (.json)
@@ -98,7 +97,7 @@
         </button>
       </div>
 
-      <!-- Progress bar -->
+      <!-- Tiến Trình -->
       <div id="progressContainer" class="hidden space-y-2">
         <div class="flex justify-between text-xs text-slate-400">
           <span id="statusText">Đang tải tệp...</span>
@@ -125,7 +124,7 @@
             <option value="all">🌐 Tất cả tệp</option>
             <option value="image">🖼️ Hình ảnh</option>
             <option value="document">📄 Tài liệu</option>
-            <option value="archive">📦 File nén (ZIP/RAR)</option>
+            <option value="archive">📦 File nén</option>
           </select>
           <input type="text" id="searchInput" oninput="filterFiles()" placeholder="🔍 Tìm tên..." class="bg-slate-900 border border-slate-700 text-xs px-3 py-2 rounded-xl outline-none focus:border-indigo-500 w-full sm:w-48">
         </div>
@@ -142,7 +141,7 @@
             </tr>
           </thead>
           <tbody id="fileTableBody" class="divide-y divide-slate-700/50">
-            <tr><td colspan="4" class="p-6 text-center text-slate-500">Chưa có dữ liệu. Đã sẵn sàng đồng bộ!</td></tr>
+            <tr><td colspan="4" class="p-6 text-center text-slate-500">Chưa có dữ liệu. Hãy đăng nhập để tải dữ liệu.</td></tr>
           </tbody>
         </table>
       </div>
@@ -150,6 +149,7 @@
   </div>
 
   <script>
+    // URL GOOGLE SHEET
     const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7iLGeDWa7Yarmlwyt51YQkyvTAFQYO591BxiFnGR_QFCAqIP-OSUH_mzEZcZZOQ_9EJX-5sXKjOCd/pub?output=csv";
 
     let CURRENT_MTB = localStorage.getItem('cur_mtb') || null;
@@ -163,6 +163,7 @@
     window.onload = () => {
       if (CURRENT_MTB && BOT_TOKEN && CHAT_ID) {
         document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('mainApp').classList.remove('hidden');
         document.getElementById('userInfoBadge').innerText = `MTB: ${CURRENT_MTB}`;
         loadLocalData();
         renderBreadcrumb();
@@ -181,7 +182,7 @@
       if (!mtb || !mk) return alert("Vui lòng nhập đầy đủ Mã Thiết Bị và Mật Khẩu!");
 
       statusDiv.className = "text-xs text-center font-medium text-amber-400";
-      statusDiv.innerText = "⏳ Đang kết nối máy chủ xác thực...";
+      statusDiv.innerText = "⏳ Đang kết nối máy chủ...";
       statusDiv.classList.remove('hidden');
       loginBtn.disabled = true;
 
@@ -194,7 +195,9 @@
         for (let i = 1; i < rows.length; i++) {
           const row = rows[i];
           if (row.length >= 4) {
-            if (row[0].trim().toUpperCase() === mtb && row[1].trim() === mk) {
+            const sheetMTB = row[0].trim().toUpperCase();
+            const sheetMK = row[1].trim();
+            if (sheetMTB === mtb && sheetMK === mk) {
               userFound = { token: row[2].trim(), chatId: row[3].trim() };
               break;
             }
@@ -215,10 +218,11 @@
 
           setTimeout(() => {
             document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
             document.getElementById('userInfoBadge').innerText = `MTB: ${CURRENT_MTB}`;
             loadLocalData();
             syncFromTelegram();
-          }, 800);
+          }, 500);
 
         } else {
           statusDiv.className = "text-xs text-center font-medium text-rose-400";
@@ -226,13 +230,13 @@
         }
       } catch (err) {
         statusDiv.className = "text-xs text-center font-medium text-rose-400";
-        statusDiv.innerText = "❌ Lỗi kết nối Google Sheet!";
+        statusDiv.innerText = "❌ Lỗi kết nối Google Sheet! Hãy kiểm tra lại mạng.";
       } finally {
         loginBtn.disabled = false;
       }
     }
 
-    // 🔄 ĐỒNG BỘ DỮ LIỆU TỪ TELEGRAM
+    // ĐỒNG BỘ TỪ TELEGRAM
     async function syncFromTelegram() {
       if (!BOT_TOKEN || !CHAT_ID) return;
 
@@ -244,7 +248,7 @@
 
         let recoveredCount = 0;
         data.result.forEach(update => {
-          const msg = update.message || update.channel_post;
+          const msg = update.message || update.channel_post; // ĐÃ SỬA CÚ PHÁP
           if (msg && msg.caption && msg.caption.includes('[META]:')) {
             try {
               const metaJson = msg.caption.split('[META]:')[1];
@@ -266,7 +270,7 @@
       }
     }
 
-    // 📤 TẢI TỆP LÊN TELEGRAM (MÃ HÓA TÊN FILE THÀNH .DAT ĐỂ CHỐNG QUÉT)
+    // TẢI FILE LÊN (MÃ HÓA .DAT TỰ ĐỘNG)
     async function startBatchUploadQueue() {
       const input = document.getElementById('fileInput');
       const files = Array.from(input.files);
@@ -292,7 +296,7 @@
           continue;
         }
 
-        statusText.innerText = `Đang mã hóa & tải (${i + 1}/${files.length}): ${file.name}`;
+        statusText.innerText = `Đang tải (${i + 1}/${files.length}): ${file.name}`;
         const percent = Math.round(((i + 1) / files.length) * 100);
         progressBar.style.width = percent + '%';
         percentText.innerText = percent + '%';
@@ -300,7 +304,7 @@
         const uploaded = await uploadSingleFileEncrypted(file);
         if (uploaded) successCount++;
 
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 800));
       }
 
       uploadBtn.disabled = false;
@@ -310,18 +314,17 @@
 
       renderFiles(getCurrentFolderItems());
       updateStorageUsage();
-      alert(`🎉 Đã tải lên và mã hóa bảo mật thành công ${successCount}/${files.length} tệp!`);
+      alert(`🎉 Đã tải lên ${successCount}/${files.length} tệp!`);
     }
 
     function uploadSingleFileEncrypted(file) {
       return new Promise((resolve) => {
-        // Đổi tên file gửi lên Telegram thành dạng ẩn danh .dat
-        const safeSafeName = "enc_" + Math.random().toString(36).substring(2, 10) + ".dat";
-        const renamedFile = new File([file], safeSafeName, { type: "application/octet-stream" });
+        const safeName = "enc_" + Math.random().toString(36).substring(2, 10) + ".dat";
+        const renamedFile = new File([file], safeName, { type: "application/octet-stream" });
 
         const fileItemTemp = {
           id: "file_" + Date.now() + "_" + Math.floor(Math.random()*1000),
-          realName: file.name, // Lưu tên thật ở đây
+          realName: file.name,
           name: file.name,
           size: file.size,
           isFolder: false,
@@ -332,7 +335,7 @@
         const formData = new FormData();
         formData.append('chat_id', CHAT_ID);
         formData.append('document', renamedFile);
-        formData.append('caption', `🛡️ [ENCRYPTED_FILE]\n[META]:${JSON.stringify(fileItemTemp)}`);
+        formData.append('caption', `🛡️ [ENCRYPTED]\n[META]:${JSON.stringify(fileItemTemp)}`);
 
         fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
           method: 'POST',
@@ -353,10 +356,10 @@
       });
     }
 
-    // TẢI FILE VỀ MÁY VÀ TỰ ĐỔI TÊN TỆP VỀ TÊN GỐC
+    // TẢI FILE VỀ MÁY
     async function downloadFile(fileId) {
       const item = dbFiles.find(f => f.id === fileId);
-      if (!item) return alert("Không tìm thấy thông tin tệp!");
+      if (!item) return alert("Không tìm thấy tệp!");
 
       const tgId = item.tg_file_id || item.id;
 
@@ -365,8 +368,6 @@
         const data = await res.json();
         if (data.ok) {
           const downloadUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${data.result.file_path}`;
-          
-          // Tải về và tự phục hồi lại đúng tên gốc cho khách
           const a = document.createElement('a');
           a.href = downloadUrl;
           a.download = item.realName || item.name;
@@ -374,19 +375,19 @@
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-        } else alert("Không lấy được đường dẫn tệp từ Telegram!");
+        } else alert("Không lấy được đường dẫn từ Telegram!");
       } catch {
-        alert("Lỗi kết nối khi tải tệp!");
+        alert("Lỗi tải tệp!");
       }
     }
 
-    // 📱 CÔNG CỤ SAO LƯU/KHÔI PHỤC JSON CHO ĐIỆN THOẠI
+    // SAO LƯU & KHÔI PHỤC JSON
     function exportBackupJSON() {
-      if (dbFiles.length === 0) return alert("Chưa có dữ liệu nào để sao lưu!");
+      if (dbFiles.length === 0) return alert("Chưa có dữ liệu!");
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dbFiles, null, 2));
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `Backup_Cloud_${CURRENT_MTB}_${Date.now()}.json`);
+      downloadAnchor.setAttribute("download", `Backup_${CURRENT_MTB}.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
@@ -406,16 +407,15 @@
             renderBreadcrumb();
             renderFiles(getCurrentFolderItems());
             updateStorageUsage();
-            alert("🎉 Khôi phục dữ liệu từ bản Sao Lưu thành công!");
+            alert("🎉 Khôi phục sao lưu thành công!");
           } else alert("File sao lưu không hợp lệ!");
         } catch (err) {
-          alert("Lỗi đọc file sao lưu!");
+          alert("Lỗi đọc file!");
         }
       };
       reader.readAsText(file);
     }
 
-    // HÀM QUẢN LÝ THƯ MỤC VÀ HỆ THỐNG
     function createNewFolder() {
       const folderName = prompt("Nhập tên thư mục mới:");
       if (!folderName || !folderName.trim()) return;
@@ -431,16 +431,6 @@
       dbFiles.unshift(newFolder);
       saveLocalData();
       renderFiles(getCurrentFolderItems());
-
-      fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: CHAT_ID,
-          text: `📁 [THƯ MỤC MỚI]: ${newFolder.name}`,
-          caption: `[META]:${JSON.stringify(newFolder)}`
-        })
-      }).catch(() => {});
     }
 
     function getCurrentFolderItems() {
@@ -564,8 +554,12 @@
       }
     }
 
+    // ĐỌC CSV AN TOÀN
     function parseCSV(text) {
-      return text.split('\n').map(line => line.split(',').map(cell => cell.replace(/^"(.*)"$/, '$1').trim()));
+      const lines = text.split(/\r\n|\n/);
+      return lines.map(line => {
+        return line.split(',').map(cell => cell.replace(/^"(.*)"$/, '$1').trim());
+      });
     }
 
     function getFileIcon(fileName) {
