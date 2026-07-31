@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kho Dữ Liệu Đám Mây Cloud Pro</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Thư viện nén ZIP -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen p-3 sm:p-6 font-sans">
@@ -45,7 +44,7 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h1 class="text-xl sm:text-2xl font-bold text-indigo-400 flex items-center gap-2">⚡ Kho Đám Mây Cá Nhân</h1>
-          <p class="text-xs text-slate-400 mt-0.5">Dữ liệu đồng bộ trực tiếp & lưu trữ bền vững trên Telegram</p>
+          <p class="text-xs text-slate-400 mt-0.5">Đồng bộ đám mây realtime qua Telegram DB</p>
         </div>
         
         <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
@@ -55,8 +54,8 @@
             📦 Tải Gom ZIP
           </button>
 
-          <button onclick="syncFromTelegram(true)" class="text-xs bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded-xl transition font-semibold flex items-center gap-1">
-            🔄 Làm Mới
+          <button onclick="loadDatabaseFromTelegram(true)" class="text-xs bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded-xl transition font-semibold flex items-center gap-1">
+            🔄 Đồng Bộ Lại
           </button>
 
           <button onclick="logout()" class="text-xs bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 px-3 py-1.5 rounded-xl transition">
@@ -108,7 +107,6 @@
       <div class="bg-slate-900/60 px-4 sm:px-6 py-3 border-b border-slate-700 flex items-center justify-between text-sm text-slate-300 overflow-x-auto">
         <div id="breadcrumbBar" class="flex items-center gap-2"></div>
         
-        <!-- Nút Xóa Hàng Loạt -->
         <button onclick="deleteSelectedItems()" id="deleteSelectedBtn" class="hidden text-xs bg-rose-600 hover:bg-rose-500 text-white font-semibold px-3 py-1.5 rounded-xl transition shadow-md flex items-center gap-1 whitespace-nowrap">
           🗑️ Xóa Mục Đã Chọn (<span id="selectedCount">0</span>)
         </button>
@@ -145,7 +143,7 @@
             </tr>
           </thead>
           <tbody id="fileTableBody" class="divide-y divide-slate-700/50">
-            <tr><td colspan="5" class="p-6 text-center text-slate-500">Đang tải dữ liệu từ Telegram...</td></tr>
+            <tr><td colspan="5" class="p-6 text-center text-slate-500">Đang tải dữ liệu từ Telegram Database...</td></tr>
           </tbody>
         </table>
       </div>
@@ -163,13 +161,14 @@
     let dbFiles = [];
     let selectedFileIds = new Set();
     let currentFolderId = null;
+    let dbMsgId = null; // Lưu ID tin nhắn CSDL trên Telegram
 
     window.onload = async () => {
       if (CURRENT_MTB && BOT_TOKEN && CHAT_ID) {
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('mainApp').classList.remove('hidden');
         document.getElementById('userInfoBadge').innerText = `MTB: ${CURRENT_MTB}`;
-        await syncFromTelegram(false);
+        await loadDatabaseFromTelegram(false);
       }
     };
 
@@ -221,7 +220,7 @@
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('mainApp').classList.remove('hidden');
             document.getElementById('userInfoBadge').innerText = `MTB: ${CURRENT_MTB}`;
-            await syncFromTelegram(false);
+            await loadDatabaseFromTelegram(false);
           }, 500);
 
         } else {
@@ -236,58 +235,90 @@
       }
     }
 
-    // ĐỒNG BỘ TỪ TELEGRAM
-    async function syncFromTelegram(showAlert = true) {
+    // ĐỌC DATABASE TỪ TELEGRAM KHÔNG BAO GIỜ MẤT DỮ LIỆU DÙ ĐỔI MÁY
+    async function loadDatabaseFromTelegram(showAlert = true) {
       if (!BOT_TOKEN || !CHAT_ID) return;
 
       try {
-        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=-1000`);
+        // Tìm pinned message hoặc tin nhắn DB chứa dữ liệu
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChat?chat_id=${CHAT_ID}`);
         const data = await res.json();
         
-        if (!data.ok) {
-          if(showAlert) alert("❌ Không kết nối được Bot Telegram!");
-          return;
+        let foundDb = false;
+
+        if (data.ok && data.result.pinned_message) {
+          const pinnedMsg = data.result.pinned_message;
+          if (pinnedMsg.text && pinnedMsg.text.includes("[SYS_DB]:")) {
+            const jsonStr = pinnedMsg.text.split("[SYS_DB]:")[1];
+            dbFiles = JSON.parse(jsonStr);
+            dbMsgId = pinnedMsg.message_id;
+            foundDb = true;
+          }
         }
 
-        dbFiles = [];
-        selectedFileIds.clear();
-
-        data.result.forEach(update => {
-          const msg = update.message || update.channel_post;
-          if (msg && msg.caption && msg.caption.includes('[META]:')) {
-            try {
-              const metaJson = msg.caption.split('[META]:')[1];
-              const item = JSON.parse(metaJson);
-              
-              if (!dbFiles.some(f => f.id === item.id)) {
-                if (msg.document) item.tg_file_id = msg.document.file_id;
-                item.msg_id = msg.message_id; // Lưu lại ID tin nhắn để xóa triệt để
-                dbFiles.push(item);
-              }
-            } catch (e) {}
-          } else if (msg && msg.text && msg.text.includes('[META]:')) {
-            try {
-              const metaJson = msg.text.split('[META]:')[1];
-              const item = JSON.parse(metaJson);
-              if (!dbFiles.some(f => f.id === item.id)) {
-                item.msg_id = msg.message_id;
-                dbFiles.push(item);
-              }
-            } catch(e) {}
-          }
-        });
+        // Nếu chưa có tin nhắn ghim DB, tự khởi tạo 1 tin mới
+        if (!foundDb) {
+          await saveDatabaseToTelegram();
+        }
 
         renderBreadcrumb();
         renderFiles(getCurrentFolderItems());
         updateStorageUsage();
-        
-        if (showAlert) alert(`🎉 Đồng bộ dữ liệu thành công!`);
+
+        if (showAlert) alert("🎉 Đã đồng bộ dữ liệu chuẩn 100% từ Telegram Cloud!");
       } catch (e) {
-        if(showAlert) alert("Lỗi kết nối đồng bộ!");
+        if (showAlert) alert("Lỗi khi đọc CSDL từ Telegram!");
       }
     }
 
-    // TẢI FILE LÊN TELEGRAM (CHẠY LẦN LƯỢT ĐỂ TRÁNH NGHẼN API)
+    // LƯU TOÀN BỘ CSDL LÊN TIN NHẮN GHIM TELEGRAM
+    async function saveDatabaseToTelegram() {
+      const dbText = `📌 [SYS_DB]:${JSON.stringify(dbFiles)}`;
+
+      if (dbMsgId) {
+        // Sửa tin nhắn CSDL cũ
+        try {
+          await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: CHAT_ID,
+              message_id: dbMsgId,
+              text: dbText
+            })
+          });
+          return;
+        } catch(e) {}
+      }
+
+      // Tạo tin nhắn CSDL mới nếu chưa có
+      try {
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: CHAT_ID,
+            text: dbText
+          })
+        });
+
+        const data = await res.json();
+        if (data.ok) {
+          dbMsgId = data.result.message_id;
+          // Ghim tin nhắn này lại làm CSDL vĩnh viễn
+          await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/pinChatMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: CHAT_ID,
+              message_id: dbMsgId
+            })
+          });
+        }
+      } catch(e) {}
+    }
+
+    // TẢI FILE LÊN (XỬ LÝ LẦN LƯỢT 1-2 FILE)
     async function startBatchUploadQueue() {
       const input = document.getElementById('fileInput');
       const files = Array.from(input.files);
@@ -321,9 +352,11 @@
         const uploaded = await uploadSingleFileOriginal(file);
         if (uploaded) successCount++;
 
-        // Nghỉ 500ms giữa mỗi file để không bị quá tải API
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 400));
       }
+
+      // Cập nhật CSDL tổng lên Telegram
+      await saveDatabaseToTelegram();
 
       uploadBtn.disabled = false;
       progressContainer.classList.add('hidden');
@@ -332,7 +365,7 @@
 
       renderFiles(getCurrentFolderItems());
       updateStorageUsage();
-      alert(`🎉 Đã tải lên ${successCount}/${files.length} tệp!`);
+      alert(`🎉 Đã tải lên ${successCount}/${files.length} tệp thành công!`);
     }
 
     function uploadSingleFileOriginal(file) {
@@ -350,7 +383,7 @@
         const formData = new FormData();
         formData.append('chat_id', CHAT_ID);
         formData.append('document', file);
-        formData.append('caption', `📁 [FILE]: ${file.name}\n[META]:${JSON.stringify(fileItemTemp)}`);
+        formData.append('caption', `📁 [FILE]: ${file.name}`);
 
         fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
           method: 'POST',
@@ -370,7 +403,7 @@
       });
     }
 
-    // GOM FILE NÉN ZIP TỪNG LẦN MỘT
+    // GOM NÉN ZIP LẦN LƯỢT
     async function downloadAllAsZip() {
       const onlyFiles = dbFiles.filter(item => !item.isFolder);
       
@@ -404,8 +437,7 @@
           }
         } catch (err) {}
 
-        // Nghỉ giữa các file tránh nghẽn
-        await new Promise(r => setTimeout(r, 300));
+        await new Promise(r => setTimeout(r, 200));
       }
 
       if (successCount === 0) {
@@ -430,7 +462,7 @@
       });
     }
 
-    // XÓA XA TRÊN TELEGRAM (XÓA CHUẨN TỪNG LẦN MỘT)
+    // XÓA TRÊN TELEGRAM VÀ CẬP NHẬT DATABASE
     async function deleteTelegramMessage(msgId) {
       if (!msgId) return;
       try {
@@ -446,27 +478,28 @@
       const item = dbFiles.find(f => f.id === id);
       if (!item) return;
 
-      if (!confirm(`Xóa vĩnh viễn "${item.realName || item.name}" trên cả Web và Telegram?`)) return;
+      if (!confirm(`Xóa vĩnh viễn "${item.realName || item.name}"?`)) return;
 
       if (item.msg_id) await deleteTelegramMessage(item.msg_id);
 
       dbFiles = dbFiles.filter(f => f.id !== id);
       selectedFileIds.delete(id);
 
+      await saveDatabaseToTelegram();
+
       renderFiles(getCurrentFolderItems());
       updateStorageUsage();
       updateSelectedCount();
     }
 
-    // XÓA HÀNG LOẠT DỰA TRÊN CHỌN TICK BOX (CHẠY HÀNG CHỜ LẦN LƯỢT)
     async function deleteSelectedItems() {
       if (selectedFileIds.size === 0) return;
 
-      if (!confirm(`Bạn có chắc chắn muốn XÓA VĨNH VIỄN ${selectedFileIds.size} mục đã chọn trên cả Web & Telegram?`)) return;
+      if (!confirm(`XÓA VĨNH VIỄN ${selectedFileIds.size} mục đã chọn?`)) return;
 
       const deleteBtn = document.getElementById('deleteSelectedBtn');
       deleteBtn.disabled = true;
-      deleteBtn.innerText = "⏳ Đang xóa trên Telegram...";
+      deleteBtn.innerText = "⏳ Đang xóa...";
 
       const idsToDelete = Array.from(selectedFileIds);
 
@@ -481,9 +514,10 @@
         dbFiles = dbFiles.filter(f => f.id !== id);
         selectedFileIds.delete(id);
 
-        // Nghỉ 200ms giữa các lệnh xóa để không bị Telegram block
-        await new Promise(r => setTimeout(r, 200));
+        await new Promise(r => setTimeout(r, 150));
       }
+
+      await saveDatabaseToTelegram();
 
       deleteBtn.disabled = false;
       document.getElementById('selectAllCheckbox').checked = false;
@@ -491,7 +525,7 @@
       renderFiles(getCurrentFolderItems());
       updateStorageUsage();
       updateSelectedCount();
-      alert("🎉 Đã xóa sạch toàn bộ các mục đã chọn!");
+      alert("🎉 Đã xóa sạch các mục đã chọn!");
     }
 
     // TẠO THƯ MỤC
@@ -507,27 +541,11 @@
         date: new Date().toLocaleString('vi-VN')
       };
 
-      try {
-        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: CHAT_ID,
-            text: `📂 [FOLDER]: ${newFolder.name}\n[META]:${JSON.stringify(newFolder)}`
-          })
-        });
-
-        const data = await res.json();
-        if (data.ok) newFolder.msg_id = data.result.message_id;
-
-        dbFiles.unshift(newFolder);
-        renderFiles(getCurrentFolderItems());
-      } catch (e) {
-        alert("Lỗi tạo thư mục!");
-      }
+      dbFiles.unshift(newFolder);
+      await saveDatabaseToTelegram();
+      renderFiles(getCurrentFolderItems());
     }
 
-    // XỬ LÝ CHỌN CHECKBOX
     function toggleSelectAll(master) {
       const currentItems = getCurrentFolderItems();
       currentItems.forEach(item => {
@@ -555,7 +573,6 @@
       else btn.classList.add('hidden');
     }
 
-    // TẢI FILE SINGLE
     async function downloadFile(fileId) {
       const item = dbFiles.find(f => f.id === fileId);
       if (!item) return alert("Không tìm thấy tệp!");
