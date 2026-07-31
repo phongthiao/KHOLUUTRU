@@ -56,16 +56,21 @@
             🔄 Đồng Bộ Cloud
           </button>
 
-          <!-- Nút Xuất Backup -->
-          <button onclick="exportBackup()" class="text-xs bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/30 px-3 py-2 rounded-xl transition font-semibold flex items-center gap-1" title="Tải file CSDL .json về máy">
+          <!-- Nút Xuất Backup (Đã nâng cấp kết nối Apps Script) -->
+          <button onclick="exportBackup()" class="text-xs bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/30 px-3 py-2 rounded-xl transition font-semibold flex items-center gap-1" title="Tải file CSDL .json về máy và cập nhật lên Sheet">
             💾 Xuất Backup
           </button>
           
-          <!-- Nút Nhập Backup -->
+          <!-- Nút Nhập Backup từ file -->
           <label class="text-xs bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 border border-blue-500/30 px-3 py-2 rounded-xl transition font-semibold cursor-pointer flex items-center gap-1" title="Khôi phục CSDL từ file .json">
             📥 Nhập Backup
             <input type="file" id="importJsonInput" accept=".json" onchange="importBackup(event)" class="hidden">
           </label>
+
+          <!-- NÚT XEM BẢN CẬP NHẬT TỪ SHEET 2 -->
+          <button onclick="openBackupHistoryModal()" class="text-xs bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/30 px-3 py-2 rounded-xl transition font-semibold flex items-center gap-1" title="Xem các bản backup đã lưu trên Google Sheet">
+            📜 Xem Bản Cập Nhật
+          </button>
 
           <!-- Nút Đăng xuất -->
           <button onclick="logout()" class="text-xs bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 px-3 py-2 rounded-xl transition">
@@ -151,11 +156,35 @@
     </div>
   </div>
 
+  <!-- MODAL BẢNG XEM BẢN CẬP NHẬT (SHEET BACKUP THỨ 2) -->
+  <div id="backupModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+        <h3 class="text-lg font-bold text-purple-400 flex items-center gap-2">
+          📜 Lịch Sử Bản Cập Nhật Backup (Google Sheet)
+        </h3>
+        <button onclick="closeBackupModal()" class="text-slate-400 hover:text-white text-xl">&times;</button>
+      </div>
+
+      <div class="max-h-80 overflow-y-auto space-y-2" id="backupListContainer">
+        <div class="text-center py-6 text-slate-400 text-xs">Đang tải danh sách bản sao lưu...</div>
+      </div>
+
+      <div class="flex justify-end pt-2">
+        <button onclick="closeBackupModal()" class="bg-slate-700 hover:bg-slate-600 text-xs text-white px-4 py-2 rounded-xl">Đóng</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // =========================================================================
-    // GOOGLE SHEET URL
+    // GOOGLE SHEET URL (SHEET 1 & SHEET 2)
     // =========================================================================
     const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7iLGeDWa7Yarmlwyt51YQkyvTAFQYO591BxiFnGR_QFCAqIP-OSUH_mzEZcZZOQ_9EJX-5sXKjOCd/pub?output=csv";
+    
+    // SHEET 2: LINK ĐÃ ĐƯỢC THAY BẰNG GOOGLE APPS SCRIPT WEB APP CỦA BẠN
+    const BACKUP_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTGAuT7Ke2A80gnqxRgixUzLwA4Ah07BXtNQ7lD2qoLOO6NkhDBPFiDX_E2s9DikKIOOj51BzXjmojr/pub?output=csv";
+    const BACKUP_SHEET_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWHjXj8REL4MAJ1JvUVRzG-206eP7LoBthuNwxMSXcUo24-UK3oog4YXRzleBer9EiFQ/exec";
 
     let CURRENT_MTB = localStorage.getItem('cur_mtb') || null;
     let BOT_TOKEN = localStorage.getItem('cur_token') || null;
@@ -235,7 +264,7 @@
       }
     }
 
-    // 🔄 ĐỒNG BỘ CHÍNH XÁC TỪ TELEGRAM PINNED MESSAGE
+    // 🔄 ĐỒNG BỘ TỪ TELEGRAM PINNED MESSAGE
     async function syncFromTelegram(showAlert = true) {
       if (!BOT_TOKEN || !CHAT_ID) return;
 
@@ -243,7 +272,6 @@
       if (showAlert) tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-amber-400 font-semibold">⏳ Đang kéo dữ liệu mới nhất từ Telegram...</td></tr>`;
 
       try {
-        // 1. Lấy tin nhắn ghim trên Telegram
         const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChat?chat_id=${CHAT_ID}`);
         const data = await res.json();
         
@@ -256,7 +284,6 @@
           }
         }
 
-        // 2. Tải file JSON CSDL đã ghim về
         if (foundDbFileId) {
           const fileRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${foundDbFileId}`);
           const fileData = await fileRes.json();
@@ -279,7 +306,7 @@
       }
     }
 
-    // 📌 LƯU CƠ SỞ DỮ LIỆU LÊN TELEGRAM VÀ GHIM LẠI (Dùng cho tự động đồng bộ)
+    // 📌 LƯU CƠ SỞ DỮ LIỆU LÊN TELEGRAM VÀ GHIM LẠI
     async function saveDatabaseToTelegram() {
       if (!BOT_TOKEN || !CHAT_ID) return;
 
@@ -299,7 +326,6 @@
 
         const data = await res.json();
         if (data.ok && data.result.message_id) {
-          // Ghim tin nhắn CSDL vừa tải lên
           await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/pinChatMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -315,14 +341,16 @@
       }
     }
 
-    // 💾 XUẤT BACKUP THỦ CÔNG CẤT VÀO MÁY CÁ NHÂN
-    function exportBackup() {
+    // 💾 XUẤT BACKUP THỦ CÔNG & TỰ ĐỘNG CẬP NHẬT LÊN GOOGLE SHEET 2 (QUA APPS SCRIPT)
+    async function exportBackup() {
       if (dbFiles.length === 0) return alert("Chưa có dữ liệu nào trong kho để xuất!");
       
       const jsonString = JSON.stringify(dbFiles, null, 2);
+      const currentTimeStr = new Date().toLocaleString('vi-VN');
+
+      // 1. Tải file về máy cá nhân
       const blob = new Blob([jsonString], { type: "application/json" });
       const url = URL.createObjectURL(blob);
-      
       const a = document.createElement('a');
       a.href = url;
       a.download = `backup_cloud_${CURRENT_MTB}_${Date.now()}.json`;
@@ -330,9 +358,109 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+
+      // 2. Gửi dữ liệu cập nhật thẳng vào Sheet 2 qua Apps Script Web App
+      try {
+        await fetch(BACKUP_SHEET_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            time: currentTimeStr,
+            backupData: JSON.stringify(dbFiles)
+          })
+        });
+        alert("🎉 Đã xuất bản Backup về máy và tự động cập nhật lên Google Sheet!");
+      } catch (err) {
+        alert("🎉 Đã tải file Backup về máy!");
+      }
     }
 
-    // 📥 NHẬP BACKUP THỦ CÔNG TỪ FILE JSON CỦA BẠN
+    // 📜 XEM VÀ KHÔI PHÚC BẢN BACKUP TỪ GOOGLE SHEET 2 (TRUY VẤN QUA SCRIPT/CSV)
+    async function openBackupHistoryModal() {
+      const modal = document.getElementById('backupModal');
+      const container = document.getElementById('backupListContainer');
+      modal.classList.remove('hidden');
+      container.innerHTML = `<div class="text-center py-6 text-amber-400 text-xs font-semibold">⏳ Đang tải bản cập nhật từ Google Sheet...</div>`;
+
+      try {
+        let listData = [];
+        
+        // Thử tải qua Apps Script
+        try {
+          const res = await fetch(BACKUP_SHEET_SCRIPT_URL);
+          listData = await res.json();
+        } catch (e) {
+          // Fallback đọc dạng CSV
+          const response = await fetch(BACKUP_SHEET_CSV_URL + '&t=' + Date.now());
+          const csvText = await response.text();
+          const rows = parseCSV(csvText);
+          for (let i = 1; i < rows.length; i++) {
+            if (rows[i][0]) {
+              listData.push({ time: rows[i][0], backupData: rows[i][1] });
+            }
+          }
+        }
+
+        if (!listData || listData.length === 0) {
+          container.innerHTML = `<div class="text-center py-6 text-slate-500 text-xs">Chưa có bản cập nhật nào trên Google Sheet.</div>`;
+          return;
+        }
+
+        let html = '';
+        for (let i = listData.length - 1; i >= 0; i--) {
+          const item = listData[i];
+          const timeStr = item.time;
+          const rawJsonData = typeof item.backupData === 'object' ? JSON.stringify(item.backupData) : item.backupData;
+
+          html += `
+            <div class="bg-slate-900 border border-slate-700/80 p-3 rounded-xl flex items-center justify-between hover:border-purple-500/50 transition">
+              <div>
+                <div class="text-xs font-bold text-slate-200">🕒 ${timeStr}</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">Bản sao lưu CSDL trên đám mây</div>
+              </div>
+              <button onclick="applyBackupFromSheet('${encodeURIComponent(rawJsonData)}')" class="bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/30 text-xs px-3 py-1.5 rounded-lg font-semibold transition">
+                📥 Nhập Backup Này
+              </button>
+            </div>
+          `;
+        }
+        container.innerHTML = html;
+      } catch (err) {
+        container.innerHTML = `<div class="text-center py-6 text-rose-400 text-xs">❌ Lỗi kết nối Google Sheet bản sao lưu!</div>`;
+      }
+    }
+
+    function closeBackupModal() {
+      document.getElementById('backupModal').classList.add('hidden');
+    }
+
+    // TỰ ĐỘNG NHẬP BACKUP KHI BẤM VÀO NÚT TRÊN MODAL
+    async function applyBackupFromSheet(encodedJsonData) {
+      try {
+        const jsonStr = decodeURIComponent(encodedJsonData);
+        const importedData = JSON.parse(jsonStr);
+
+        if (Array.isArray(importedData)) {
+          if (confirm(`Bạn có chắc muốn khôi phục ${importedData.length} mục từ bản backup này?`)) {
+            dbFiles = importedData;
+            renderBreadcrumb();
+            renderFiles(getCurrentFolderItems());
+            updateStorageUsage();
+            
+            await saveDatabaseToTelegram();
+            closeBackupModal();
+            alert("🎉 Nhập dữ liệu sao lưu từ Sheet thành công & Đã đồng bộ lên Telegram!");
+          }
+        } else {
+          alert("❌ Dữ liệu trên Sheet không đúng cấu trúc JSON!");
+        }
+      } catch (e) {
+        alert("❌ Lỗi khi xử lý dữ liệu sao lưu!");
+      }
+    }
+
+    // 📥 NHẬP BACKUP THỦ CÔNG TỪ FILE JSON
     function importBackup(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -348,7 +476,6 @@
               renderFiles(getCurrentFolderItems());
               updateStorageUsage();
               
-              // Tự động đẩy ngay CSDL vừa nhập lên Telegram Pinned Cloud
               await saveDatabaseToTelegram();
               alert("🎉 Nhập dữ liệu thành công & Đã đồng bộ lên Đám Mây!");
             }
@@ -360,7 +487,7 @@
         }
       };
       reader.readAsText(file);
-      event.target.value = ''; // Reset input file
+      event.target.value = '';
     }
 
     // TẠO THƯ MỤC MỚI
@@ -419,7 +546,6 @@
         await new Promise(r => setTimeout(r, 300));
       }
 
-      // Đẩy CSDL mới đã có danh sách file vừa tải lên Cloud
       await saveDatabaseToTelegram();
 
       uploadBtn.disabled = false;
