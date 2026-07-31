@@ -15,7 +15,7 @@
       <div class="text-center space-y-1">
         <div class="text-4xl">🔐</div>
         <h2 class="text-xl font-bold text-indigo-400">Đăng Nhập Kho Dữ Liệu</h2>
-        <p class="text-xs text-slate-400">Nhập thông tin thuê bao để truy cập</p>
+        <p class="text-xs text-slate-400">Nhập thông tin thuê bao để đồng bộ dữ liệu</p>
       </div>
       
       <div class="space-y-3">
@@ -44,7 +44,7 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h1 class="text-xl sm:text-2xl font-bold text-indigo-400 flex items-center gap-2">⚡ Kho Đám Mây Cá Nhân</h1>
-          <p class="text-xs text-slate-400 mt-0.5">Đồng bộ đám mây realtime qua Telegram DB</p>
+          <p class="text-xs text-slate-400 mt-0.5">Đồng bộ đám mây realtime qua Telegram File DB</p>
         </div>
         
         <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
@@ -143,7 +143,7 @@
             </tr>
           </thead>
           <tbody id="fileTableBody" class="divide-y divide-slate-700/50">
-            <tr><td colspan="5" class="p-6 text-center text-slate-500">Đang tải dữ liệu từ Telegram Database...</td></tr>
+            <tr><td colspan="5" class="p-6 text-center text-slate-500">Đang tải dữ liệu đồng bộ từ Telegram...</td></tr>
           </tbody>
         </table>
       </div>
@@ -157,11 +157,10 @@
     let BOT_TOKEN = localStorage.getItem('cur_token') || null;
     let CHAT_ID = localStorage.getItem('cur_chatid') || null;
 
-    const MAX_STORAGE_BYTES = 10 * 1024 * 1024 * 1024; // 10GB
+    const MAX_STORAGE_BYTES = 10 * 1024 * 1024 * 1024;
     let dbFiles = [];
     let selectedFileIds = new Set();
     let currentFolderId = null;
-    let dbMsgId = null; // Lưu ID tin nhắn CSDL trên Telegram
 
     window.onload = async () => {
       if (CURRENT_MTB && BOT_TOKEN && CHAT_ID) {
@@ -172,7 +171,7 @@
       }
     };
 
-    // ĐĂNG NHẬP
+    // ĐĂNG NHẬP GOOGLE SHEET
     async function loginWithGoogleSheet() {
       const mtb = document.getElementById('inputMTB').value.trim().toUpperCase();
       const mk = document.getElementById('inputMK').value.trim();
@@ -235,90 +234,74 @@
       }
     }
 
-    // ĐỌC DATABASE TỪ TELEGRAM KHÔNG BAO GIỜ MẤT DỮ LIỆU DÙ ĐỔI MÁY
+    // NÂNG CẤP: ĐỌC CSDL FILE DATABASE.JSON CHUẨN 100%
     async function loadDatabaseFromTelegram(showAlert = true) {
       if (!BOT_TOKEN || !CHAT_ID) return;
 
+      const tbody = document.getElementById('fileTableBody');
+      if (showAlert) tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-amber-400">⏳ Đang tải cơ sở dữ liệu mới nhất từ Telegram...</td></tr>`;
+
       try {
-        // Tìm pinned message hoặc tin nhắn DB chứa dữ liệu
-        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getChat?chat_id=${CHAT_ID}`);
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=-100`);
         const data = await res.json();
         
-        let foundDb = false;
+        let foundDbFileId = null;
 
-        if (data.ok && data.result.pinned_message) {
-          const pinnedMsg = data.result.pinned_message;
-          if (pinnedMsg.text && pinnedMsg.text.includes("[SYS_DB]:")) {
-            const jsonStr = pinnedMsg.text.split("[SYS_DB]:")[1];
-            dbFiles = JSON.parse(jsonStr);
-            dbMsgId = pinnedMsg.message_id;
-            foundDb = true;
+        if (data.ok && data.result.length > 0) {
+          // Lấy file database.json mới nhất gửi lên channel
+          for (let i = data.result.length - 1; i >= 0; i--) {
+            const msg = data.result[i].message || data.result[i].channel_post;
+            if (msg && msg.document && msg.document.file_name === `database_${CURRENT_MTB}.json`) {
+              foundDbFileId = msg.document.file_id;
+              break;
+            }
           }
         }
 
-        // Nếu chưa có tin nhắn ghim DB, tự khởi tạo 1 tin mới
-        if (!foundDb) {
-          await saveDatabaseToTelegram();
+        if (foundDbFileId) {
+          // Tải file JSON dữ liệu về
+          const fileRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${foundDbFileId}`);
+          const fileData = await fileRes.json();
+          if (fileData.ok) {
+            const contentRes = await fetch(`https://api.telegram.org/file/bot${BOT_TOKEN}/${fileData.result.file_path}`);
+            dbFiles = await contentRes.json();
+          }
         }
 
         renderBreadcrumb();
         renderFiles(getCurrentFolderItems());
         updateStorageUsage();
 
-        if (showAlert) alert("🎉 Đã đồng bộ dữ liệu chuẩn 100% từ Telegram Cloud!");
+        if (showAlert) alert("🎉 Đã đồng bộ dữ liệu thành công từ Telegram!");
       } catch (e) {
-        if (showAlert) alert("Lỗi khi đọc CSDL từ Telegram!");
+        console.error(e);
+        if (showAlert) alert("❌ Không thể tải cơ sở dữ liệu!");
       }
     }
 
-    // LƯU TOÀN BỘ CSDL LÊN TIN NHẮN GHIM TELEGRAM
+    // NÂNG CẤP: LƯU CSDL THÀNH FILE GỬI LÊN TELEGRAM (KHÔNG LO QUÁ TẢI)
     async function saveDatabaseToTelegram() {
-      const dbText = `📌 [SYS_DB]:${JSON.stringify(dbFiles)}`;
+      if (!BOT_TOKEN || !CHAT_ID) return;
 
-      if (dbMsgId) {
-        // Sửa tin nhắn CSDL cũ
-        try {
-          await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/editMessageText`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: CHAT_ID,
-              message_id: dbMsgId,
-              text: dbText
-            })
-          });
-          return;
-        } catch(e) {}
-      }
-
-      // Tạo tin nhắn CSDL mới nếu chưa có
       try {
-        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: CHAT_ID,
-            text: dbText
-          })
-        });
+        const jsonString = JSON.stringify(dbFiles);
+        const blob = new Blob([jsonString], { type: "application/json" });
+        
+        const formData = new FormData();
+        formData.append('chat_id', CHAT_ID);
+        formData.append('document', blob, `database_${CURRENT_MTB}.json`);
+        formData.append('caption', `📌 [SYS_DB_FILE] Cập nhật CSDL lúc ${new Date().toLocaleString('vi-VN')}`);
 
-        const data = await res.json();
-        if (data.ok) {
-          dbMsgId = data.result.message_id;
-          // Ghim tin nhắn này lại làm CSDL vĩnh viễn
-          await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/pinChatMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: CHAT_ID,
-              message_id: dbMsgId
-            })
-          });
-        }
-      } catch(e) {}
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
+          method: 'POST',
+          body: formData
+        });
+      } catch (e) {
+        console.error("Lỗi lưu CSDL:", e);
+      }
     }
 
-    // TẢI FILE LÊN (XỬ LÝ LẦN LƯỢT 1-2 FILE)
+    // TẢI FILE LÊN TELEGRAM
     async function startBatchUploadQueue() {
       const input = document.getElementById('fileInput');
       const files = Array.from(input.files);
@@ -352,10 +335,10 @@
         const uploaded = await uploadSingleFileOriginal(file);
         if (uploaded) successCount++;
 
-        await new Promise(r => setTimeout(r, 400));
+        await new Promise(r => setTimeout(r, 300));
       }
 
-      // Cập nhật CSDL tổng lên Telegram
+      // Lưu lại toàn bộ CSDL mới lên Telegram
       await saveDatabaseToTelegram();
 
       uploadBtn.disabled = false;
@@ -403,10 +386,9 @@
       });
     }
 
-    // GOM NÉN ZIP LẦN LƯỢT
+    // GOM ZIP
     async function downloadAllAsZip() {
       const onlyFiles = dbFiles.filter(item => !item.isFolder);
-      
       if (onlyFiles.length === 0) return alert("❌ Không có file nào để gom nén!");
 
       if (!confirm(`Bạn có muốn gom nén và tải về ${onlyFiles.length} file dạng ZIP?`)) return;
@@ -462,7 +444,7 @@
       });
     }
 
-    // XÓA TRÊN TELEGRAM VÀ CẬP NHẬT DATABASE
+    // XÓA TRÊN TELEGRAM VÀ CẬP NHẬT
     async function deleteTelegramMessage(msgId) {
       if (!msgId) return;
       try {
