@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Quản Lý Đa Kho OneDrive Multi-Store</title>
-  <script src="https://alcdn.msauth.net/browser/2.38.0/js/msal-browser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   <style>
@@ -23,6 +22,7 @@
     th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
     th { background: #f8f9fa; }
     .status-text { font-size: 0.9em; color: #0078d4; font-weight: bold; margin-top: 10px; }
+    .code-box { background: #fff3cd; border: 1px solid #ffeeba; padding: 10px; border-radius: 6px; margin-top: 10px; word-break: break-all; }
   </style>
 </head>
 <body>
@@ -36,7 +36,7 @@
       <input type="text" id="searchInput" placeholder="Tìm kiếm tệp trong kho..." oninput="filterFiles()">
       
       <div style="margin-top: 15px;">
-        <label><b>Tải tệp lên kho đang chọn (Tự động tải file lớn > 4MB):</b></label>
+        <label><b>Tải tệp lên kho đang chọn:</b></label>
         <input type="file" id="fileUploader" multiple>
         <button class="btn btn-success" onclick="uploadFiles()">🚀 Tải Lên</button>
         <button class="btn" onclick="downloadSelectedBatch()">📦 Tải Hàng Loạt (.ZIP)</button>
@@ -54,113 +54,157 @@
         </tr>
       </thead>
       <tbody id="fileListBody">
-        <tr><td colspan="4" style="text-align: center;">Vui lòng bấm "+ Kết Nối Hotmail" ở trên.</td></tr>
+        <tr><td colspan="4" style="text-align: center;">Vui lòng kết nối kho bên trên.</td></tr>
       </tbody>
     </table>
   </div>
 
   <script>
-    // Mã Client ID do shop cung cấp
     const CLIENT_ID = "9e5f94bc-e8a4-4e73-b8be-63364c29d753";
-
-    const msalConfig = {
-      auth: {
-        clientId: CLIENT_ID,
-        authority: "https://login.microsoftonline.com/common",
-        redirectUri: window.location.origin + window.location.pathname
-      },
-      cache: {
-        cacheLocation: "localStorage",
-        storeAuthStateInCookie: true
-      }
-    };
-
-    const msalApp = new msal.PublicClientApplication(msalConfig);
-    const SCOPES = ["User.Read", "Files.ReadWrite.All"];
     let activeIndex = null;
     let currentFiles = [];
 
     async function init() {
-      await msalApp.initialize();
-      
-      try {
-        await msalApp.handleRedirectPromise();
-      } catch (err) {
-        console.error("Lỗi xác thực:", err);
-      }
-
       renderAccounts();
     }
 
-    async function loginAccount() {
+    async function loginDeviceCode(index) {
+      const card = document.getElementById(`card-${index}`);
+      card.innerHTML = `<h4>Kho ${index + 1}: Đang tạo mã kết nối...</h4>`;
+
       try {
-        await msalApp.loginPopup({
-          scopes: SCOPES,
-          prompt: "select_account"
+        const res = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/devicecode", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            client_id: CLIENT_ID,
+            scope: "offline_access Files.ReadWrite.All User.Read"
+          })
         });
-        renderAccounts();
+        const data = await res.json();
+
+        if (data.user_code) {
+          card.innerHTML = `
+            <h4>Kho ${index + 1}: Xác minh đăng nhập</h4>
+            <div class="code-box">
+              <p>1. Mở link: <a href="${data.verification_uri}" target="_blank"><b>${data.verification_uri}</b></a></p>
+              <p>2. Nhập mã này: <b style="color:red; font-size:1.2em;">${data.user_code}</b></p>
+              <p><i>Đang chờ bạn nhập mã...</i></p>
+            </div>
+          `;
+
+          pollToken(data.device_code, data.interval || 5, index);
+        } else {
+          alert("Không tạo được mã xác minh. Hãy thử lại!");
+          renderAccounts();
+        }
       } catch (err) {
-        console.error("Đăng nhập thất bại:", err);
+        alert("Lỗi kết nối: " + err.message);
+        renderAccounts();
       }
     }
 
-    async function getTokenSilent(account) {
-      try {
-        const res = await msalApp.acquireTokenSilent({ account, scopes: SCOPES });
-        return res.accessToken;
-      } catch {
-        const res = await msalApp.acquireTokenPopup({ account, scopes: SCOPES });
-        return res.accessToken;
+    async function pollToken(deviceCode, interval, index) {
+      const timer = setInterval(async () => {
+        const res = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            grant_type: "urn:ietf:params:oauth:grant-type:device_code",
+            client_id: CLIENT_ID,
+            device_code: deviceCode
+          })
+        });
+        const data = await res.json();
+
+        if (data.access_token) {
+          clearInterval(timer);
+          localStorage.setItem(`onedrive_access_token_${index}`, data.access_token);
+          if (data.refresh_token) {
+            localStorage.setItem(`onedrive_refresh_token_${index}`, data.refresh_token);
+          }
+          renderAccounts();
+        } else if (data.error && data.error !== "authorization_pending") {
+          clearInterval(timer);
+          alert("Quá thời gian xác nhận hoặc xảy ra lỗi. Vui lòng bấm thử lại!");
+          renderAccounts();
+        }
+      }, interval * 1000);
+    }
+
+    async function getValidToken(index) {
+      let accessToken = localStorage.getItem(`onedrive_access_token_${index}`);
+      const refreshToken = localStorage.getItem(`onedrive_refresh_token_${index}`);
+
+      if (!accessToken && !refreshToken) return null;
+
+      // Kiểm tra token còn sống không
+      const checkRes = await fetch("https://graph.microsoft.com/v1.0/me/drive", {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+
+      if (checkRes.ok) return accessToken;
+
+      // Nếu hết hạn, dùng Refresh Token để đổi Access Token mới ngầm
+      if (refreshToken) {
+        const res = await fetch("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            grant_type: "refresh_token",
+            client_id: CLIENT_ID,
+            refresh_token: refreshToken
+          })
+        });
+        const data = await res.json();
+        if (data.access_token) {
+          localStorage.setItem(`onedrive_access_token_${index}`, data.access_token);
+          if (data.refresh_token) localStorage.setItem(`onedrive_refresh_token_${index}`, data.refresh_token);
+          return data.access_token;
+        }
       }
+      return null;
     }
 
     async function renderAccounts() {
       const container = document.getElementById("accountsList");
       container.innerHTML = "";
 
-      const accounts = msalApp.getAllAccounts();
-
       for (let i = 0; i < 3; i++) {
-        const acc = accounts[i];
         const card = document.createElement("div");
         card.className = "card";
+        card.id = `card-${i}`;
 
-        if (acc) {
-          try {
-            const token = await getTokenSilent(acc);
-            const driveInfo = await fetchDriveQuota(token);
+        const token = await getValidToken(i);
 
-            const usedGB = (driveInfo.used / (1024 ** 3)).toFixed(2);
-            const totalGB = (driveInfo.total / (1024 ** 3)).toFixed(2);
-            const percent = ((driveInfo.used / driveInfo.total) * 100).toFixed(1);
+        if (token) {
+          const driveInfo = await fetchDriveQuota(token);
+          const usedGB = (driveInfo.used / (1024 ** 3)).toFixed(2);
+          const totalGB = (driveInfo.total / (1024 ** 3)).toFixed(2);
+          const percent = ((driveInfo.used / driveInfo.total) * 100).toFixed(1);
 
-            card.innerHTML = `
-              <h4>Kho ${i + 1}: ${acc.username}</h4>
-              <p>Đã dùng: <b>${usedGB} GB</b> / ${totalGB} GB (${percent}%)</p>
-              <div class="progress-bar"><div class="progress-fill" style="width: ${percent}%"></div></div>
-              <button class="btn" onclick="loadFiles(${i})">📂 Mở Kho Này</button>
-              <button class="btn btn-danger" onclick="logoutAccount(${i})">Thoát Kho</button>
-            `;
-          } catch {
-            card.innerHTML = `
-              <h4>Kho ${i + 1}: ${acc.username}</h4>
-              <p style="color:red">Cần làm mới phiên</p>
-              <button class="btn" onclick="loadFiles(${i})">🔄 Mở Lại Kho</button>
-            `;
-          }
+          card.innerHTML = `
+            <h4>Kho ${i + 1}: (Đã kết nối)</h4>
+            <p>Đã dùng: <b>${usedGB} GB</b> / ${totalGB} GB (${percent}%)</p>
+            <div class="progress-bar"><div class="progress-fill" style="width: ${percent}%"></div></div>
+            <button class="btn" onclick="loadFiles(${i})">📂 Mở Kho Này</button>
+            <button class="btn btn-danger" onclick="logoutAccount(${i})">Thoát Kho</button>
+          `;
         } else {
           card.innerHTML = `
-            <h4>Kho ${i + 1}: (Chưa liên kết)</h4>
-            <p>Thêm tài khoản Hotmail thứ ${i + 1}</p>
-            <button class="btn" onclick="loginAccount()">+ Kết Nối Hotmail</button>
+            <h4>Kho ${i + 1}: (Chưa kết nối)</h4>
+            <p>Liên kết Hotmail ${i + 1}</p>
+            <button class="btn" onclick="loginDeviceCode(${i})">+ Kết Nối Hotmail</button>
           `;
         }
         container.appendChild(card);
       }
 
-      // Tự động mở kho 1 nếu đã đăng nhập từ trước
-      if (accounts.length > 0 && activeIndex === null) {
-        loadFiles(0);
+      for (let i = 0; i < 3; i++) {
+        if (localStorage.getItem(`onedrive_access_token_${i}`) && activeIndex === null) {
+          loadFiles(i);
+          break;
+        }
       }
     }
 
@@ -178,10 +222,9 @@
 
     async function loadFiles(index) {
       activeIndex = index;
-      const account = msalApp.getAllAccounts()[index];
-      document.getElementById("currentKhoTitle").innerText = `🔍 Đang xem: Kho ${index + 1} (${account.username})`;
+      const token = await getValidToken(index);
+      document.getElementById("currentKhoTitle").innerText = `🔍 Đang xem: Kho ${index + 1}`;
       
-      const token = await getTokenSilent(account);
       const res = await fetch("https://graph.microsoft.com/v1.0/me/drive/root/children", {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -195,7 +238,7 @@
       tbody.innerHTML = "";
 
       if (!files || files.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Kho này trống.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">Kho này chưa có tệp nào.</td></tr>';
         return;
       }
 
@@ -219,44 +262,18 @@
     async function uploadFiles() {
       if (activeIndex === null) return alert("Vui lòng mở 1 kho trước!");
       const fileInput = document.getElementById("fileUploader");
-      if (!fileInput.files.length) return alert("Vui lòng chọn tệp!");
+      if (!fileInput.files.length) return alert("Chưa chọn tệp!");
 
-      const account = msalApp.getAllAccounts()[activeIndex];
-      const token = await getTokenSilent(account);
+      const token = await getValidToken(activeIndex);
       const status = document.getElementById("statusMessage");
 
       for (let file of fileInput.files) {
         status.innerText = `⏳ Đang tải lên: ${file.name}...`;
-
-        if (file.size < 4 * 1024 * 1024) {
-          await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${file.name}:/content`, {
-            method: "PUT",
-            headers: { Authorization: `Bearer ${token}`, "Content-Type": file.type },
-            body: file
-          });
-        } else {
-          // Hỗ trợ Chunk upload cho file lớn > 4MB
-          const sessionRes = await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${file.name}:/createUploadSession`, {
-            method: "POST",
-            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
-          });
-          const sessionData = await sessionRes.json();
-          const uploadUrl = sessionData.uploadUrl;
-
-          const chunkSize = 320 * 1024 * 10;
-          let start = 0;
-          while (start < file.size) {
-            const end = Math.min(start + chunkSize, file.size);
-            const chunk = file.slice(start, end);
-            await fetch(uploadUrl, {
-              method: "PUT",
-              headers: { "Content-Range": `bytes ${start}-${end - 1}/${file.size}` },
-              body: chunk
-            });
-            start = end;
-            status.innerText = `⏳ Đang tải lên ${file.name}: ${((start/file.size)*100).toFixed(0)}%`;
-          }
-        }
+        await fetch(`https://graph.microsoft.com/v1.0/me/drive/root:/${file.name}:/content`, {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": file.type },
+          body: file
+        });
       }
       status.innerText = "✅ Tải lên hoàn tất!";
       fileInput.value = "";
@@ -283,7 +300,7 @@
 
       const content = await zip.generateAsync({ type: "blob" });
       saveAs(content, `OneDrive_Kho_${activeIndex + 1}.zip`);
-      status.innerText = "✅ Đã tải file ZIP về máy thành công!";
+      status.innerText = "✅ Đã tải file ZIP thành công!";
     }
 
     function toggleSelectAll(masterKey) {
@@ -295,9 +312,9 @@
       renderFileList(currentFiles.filter(f => f.name.toLowerCase().includes(query)));
     }
 
-    async function logoutAccount(index) {
-      const account = msalApp.getAllAccounts()[index];
-      await msalApp.logoutPopup({ account: account });
+    function logoutAccount(index) {
+      localStorage.removeItem(`onedrive_access_token_${index}`);
+      localStorage.removeItem(`onedrive_refresh_token_${index}`);
       renderAccounts();
     }
 
