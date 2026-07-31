@@ -9,7 +9,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   
-  <!-- Thư viện GramJS Browser -->
+  <!-- Thư viện GramJS chạy trực tiếp trên Browser -->
   <script src="https://cdn.jsdelivr.net/npm/telegram@2.26.11/browser/gramjs.js"></script>
 
   <script>
@@ -35,7 +35,7 @@
   <!-- APP CONTAINER -->
   <div id="app" class="min-h-screen flex flex-col">
 
-    <!-- 1. MÀN HÌNH ĐĂNG NHẬP -->
+    <!-- 1. MÀN HÌNH ĐĂNG NHẬP HỆ THỐNG -->
     <div id="loginSection" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-md p-4">
       <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl w-full max-w-md shadow-2xl relative overflow-hidden">
         <div class="absolute -top-12 -right-12 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl"></div>
@@ -59,7 +59,7 @@
           
           <div id="loginError" class="text-rose-400 text-xs hidden text-center bg-rose-500/10 py-2 rounded-lg border border-rose-500/20"></div>
 
-          <button type="submit" id="btnLogin" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20">
+          <button type="submit" id="btnLogin" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 disabled:opacity-50">
             <span>Xác Nhận Đăng Nhập</span>
             <i data-lucide="arrow-right" class="w-4 h-4"></i>
           </button>
@@ -70,7 +70,7 @@
     <!-- 2. GIAO DIỆN CHÍNH -->
     <div id="mainSection" class="hidden flex-col flex-1">
       
-      <!-- HEADER -->
+      <!-- HEADER / THANH ĐIỀU HƯỚNG -->
       <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur sticky top-0 z-30">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div class="flex items-center gap-3">
@@ -83,20 +83,21 @@
             </div>
           </div>
 
+          <!-- THANH TÍNH NĂNG ĐIỀU HƯỚNG BỔ SUNG -->
           <div class="flex items-center gap-2">
-            <!-- NỘI QUY -->
-            <button onclick="openRulesModal()" class="flex items-center gap-1.5 text-xs font-semibold bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 px-3 py-2 rounded-xl border border-rose-500/20 transition">
+            <!-- NÚT NỘI QUY HỆ THỐNG -->
+            <button onclick="openRulesModal()" class="flex items-center gap-1.5 text-xs font-semibold bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 px-3 py-2 rounded-xl transition border border-amber-500/30">
               <i data-lucide="shield-alert" class="w-4 h-4"></i>
-              <span class="hidden sm:inline">Nội Quy</span>
+              <span class="hidden sm:inline">Nội Quy Sử Dụng</span>
             </button>
 
-            <!-- SIÊU UPLOAD -->
-            <button onclick="openGramJSModal()" class="flex items-center gap-2 text-xs font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-3 py-2 rounded-xl transition shadow-lg border border-emerald-500/30">
+            <!-- TẢI FILE SIÊU NẶNG -->
+            <button onclick="openGramJSModal()" class="flex items-center gap-2 text-xs font-semibold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white px-3 py-2 rounded-xl transition shadow-lg shadow-emerald-600/20 border border-emerald-500/30">
               <i data-lucide="zap" class="w-4 h-4 fill-white"></i>
               <span class="hidden sm:inline">Siêu Upload (>100MB)</span>
             </button>
 
-            <!-- SAO LƯU -->
+            <!-- LỊCH SỬ SAO LƯU -->
             <button onclick="openBackupHistoryModal()" class="flex items-center gap-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded-xl transition text-indigo-300 border border-slate-700">
               <i data-lucide="history" class="w-4 h-4"></i>
               <span class="hidden sm:inline">Bản Cập Nhật</span>
@@ -112,36 +113,40 @@
       <!-- BODY CONTENT -->
       <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex-1 w-full flex flex-col gap-6">
 
-        <!-- THANH CÔNG CỤ & DUNG LƯỢNG 100GB -->
+        <!-- THANH CÔNG CỤ & DUNG LƯỢNG -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="md:col-span-2 bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between gap-4">
             <nav id="breadcrumb" class="flex items-center gap-2 text-xs text-slate-400 overflow-x-auto py-1"></nav>
             
-            <div class="flex flex-wrap items-center gap-2">
-              <label id="uploadBtnLabel" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2 shadow-lg shadow-indigo-600/20">
-                <i data-lucide="upload-cloud" class="w-4 h-4"></i>
-                <span>Tải File Thường (&le;50MB)</span>
-                <input type="file" id="fileInput" multiple class="hidden" onchange="uploadFiles(this.files)" />
-              </label>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <label class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition cursor-pointer flex items-center gap-2 shadow-lg shadow-indigo-600/20">
+                  <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                  <span>Tải File Thường (&le;50MB)</span>
+                  <input type="file" id="fileInput" multiple class="hidden" onchange="uploadFiles(this.files)" />
+                </label>
 
-              <button onclick="createNewFolder()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2.5 rounded-xl transition flex items-center gap-2 border border-slate-700">
-                <i data-lucide="folder-plus" class="w-4 h-4 text-amber-400"></i>
-                <span>Thư Mục Mới</span>
-              </button>
-
-              <!-- CÁC THAO TÁC HÀNG LOẠT -->
-              <div id="bulkActions" class="hidden flex items-center gap-2 pl-2 border-l border-slate-800">
-                <button onclick="downloadSelectedFiles()" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 text-xs font-semibold px-3 py-2 rounded-xl transition flex items-center gap-1.5">
-                  <i data-lucide="download" class="w-3.5 h-3.5"></i> Tải Đã Chọn
+                <button onclick="createNewFolder()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2.5 rounded-xl transition flex items-center gap-2 border border-slate-700">
+                  <i data-lucide="folder-plus" class="w-4 h-4 text-amber-400"></i>
+                  <span>Thư Mục Mới</span>
                 </button>
-                <button onclick="deleteSelectedFiles()" class="bg-rose-600/20 hover:bg-rose-600/30 text-rose-400 border border-rose-500/30 text-xs font-semibold px-3 py-2 rounded-xl transition flex items-center gap-1.5">
-                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Xóa Đã Chọn
+              </div>
+
+              <!-- THANH TÁC VỤ CHỌN NHIỀU FILE -->
+              <div id="multiActionGroup" class="hidden items-center gap-2">
+                <button onclick="downloadSelectedFiles()" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold px-3 py-2.5 rounded-xl transition flex items-center gap-1.5">
+                  <i data-lucide="download" class="w-4 h-4"></i>
+                  <span>Tải đã chọn (<span id="selectedCount">0</span>)</span>
+                </button>
+                <button onclick="deleteSelectedFiles()" class="bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-semibold px-3 py-2.5 rounded-xl transition flex items-center gap-1.5">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  <span>Xóa chọn</span>
                 </button>
               </div>
             </div>
           </div>
 
-          <!-- DUNG LƯỢNG KHO (GIỚI HẠN 100 GB) -->
+          <!-- DUNG LƯỢNG KHO (GIỚI HẠN TỐI ĐA 100GB) -->
           <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-col justify-between">
             <div class="flex justify-between items-center text-xs">
               <span class="text-slate-400">Tổng Số Tệp</span>
@@ -150,14 +155,14 @@
             <div class="w-full bg-slate-950 h-2 rounded-full overflow-hidden my-2 border border-slate-800">
               <div id="storageBar" class="bg-indigo-500 h-full w-0 transition-all duration-300"></div>
             </div>
-            <div class="flex justify-between items-center text-[11px]">
-              <span class="text-slate-400">Đã lưu / Tối đa:</span>
-              <span class="font-semibold"><span id="storageUsageText" class="text-indigo-400">0 MB</span> / <span class="text-slate-300">100 GB</span></span>
+            <div class="flex justify-between items-center text-[11px] text-slate-400">
+              <span>Đã lưu trữ: <b id="storageUsageText" class="text-indigo-400 font-semibold">0 MB</b></span>
+              <span>Tối đa: <b class="text-slate-200 font-semibold">100 GB</b></span>
             </div>
           </div>
         </div>
 
-        <!-- UPLOAD PROGRESS -->
+        <!-- TIẾN TRÌNH UPLOAD TỆP THƯỜNG -->
         <div id="uploadProgressContainer" class="hidden bg-slate-900 border border-slate-800 p-4 rounded-2xl">
           <div class="flex items-center justify-between text-xs mb-2">
             <span id="uploadStatusText" class="text-indigo-400 font-semibold flex items-center gap-2">
@@ -170,15 +175,8 @@
           </div>
         </div>
 
-        <!-- DANH SÁCH FILE/THƯ MỤC -->
+        <!-- DANH SÁCH FILE VÀ THƯ MỤC -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl flex-1 p-4 flex flex-col">
-          <div class="flex items-center justify-between mb-3 px-1">
-            <label class="flex items-center gap-2 text-xs text-slate-400 cursor-pointer select-none">
-              <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" class="rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-0" />
-              <span>Chọn tất cả</span>
-            </label>
-          </div>
-
           <div id="fileListGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3"></div>
           <div id="emptyListState" class="hidden flex-col items-center justify-center py-16 text-slate-500">
             <i data-lucide="folder-open" class="w-12 h-12 stroke-1 mb-2 opacity-50"></i>
@@ -189,7 +187,7 @@
       </main>
     </div>
 
-    <!-- 3. MODAL SIÊU UPLOAD (GRAMJS MTPROTO) -->
+    <!-- 3. MODAL: SIÊU UPLOAD FILE LỚN (TỐI ĐA 2GB) -->
     <div id="gramjsModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col">
         <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
@@ -203,39 +201,44 @@
         </div>
 
         <div class="p-6 space-y-6">
+          <!-- KHU VỰC ĐĂNG NHẬP (Nếu chưa xác thực) -->
           <div id="gramjsAuthSection" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
             <div class="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
-              <i data-lucide="shield-check" class="w-4 h-4"></i> Xác thực MTProto Cá Nhân
+              <i data-lucide="shield-check" class="w-4 h-4"></i> Xác thực Máy Chủ Lưu Trữ Cá Nhân
             </div>
             
+            <!-- BƯỚC 1: SỐ ĐIỆN THOẠI -->
             <div id="gStepPhone" class="flex gap-2">
               <input type="text" id="gInputPhone" placeholder="+84912345678" class="flex-1 bg-slate-900 border border-slate-700 text-xs px-3 py-2 rounded-lg outline-none focus:border-emerald-500 font-mono" />
-              <button onclick="gSendCode()" id="gBtnSendCode" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition">Gửi OTP</button>
+              <button onclick="gSendCode()" id="gBtnSendCode" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition disabled:opacity-50">Gửi OTP</button>
             </div>
 
+            <!-- BƯỚC 2: OTP & 2FA -->
             <div id="gStepOTP" class="hidden space-y-2">
               <input type="text" id="gInputOTP" placeholder="Mã OTP..." class="w-full bg-slate-900 border border-slate-700 text-xs px-3 py-2 rounded-lg outline-none focus:border-emerald-500 font-mono" />
-              <input type="password" id="gInput2FA" placeholder="Mật khẩu 2FA (nếu có)..." class="w-full bg-slate-900 border border-slate-700 text-xs px-3 py-2 rounded-lg outline-none" />
-              <button onclick="gLoginOTP()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2 rounded-lg transition">Xác Nhận Đăng Nhập</button>
+              <input type="password" id="gInput2FA" placeholder="Mật khẩu bảo vệ (nếu có)..." class="w-full bg-slate-900 border border-slate-700 text-xs px-3 py-2 rounded-lg outline-none" />
+              <button onclick="gLoginOTP()" id="gBtnVerifyOTP" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2 rounded-lg transition disabled:opacity-50">Xác Nhận Đăng Nhập</button>
             </div>
 
             <div id="gAuthStatus" class="text-[11px] text-amber-400 font-medium"></div>
           </div>
 
+          <!-- KHU VỰC TẢI FILE LỚN -->
           <div id="gramjsUploadSection" class="opacity-50 pointer-events-none space-y-4">
             <div>
               <label class="block text-xs font-semibold text-slate-300 mb-2">Chọn file dung lượng lớn (100MB - 2GB):</label>
               <input type="file" id="gFileInput" class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500 bg-slate-950 rounded-xl border border-slate-800 p-1 cursor-pointer" />
             </div>
 
-            <button onclick="gUploadBigFile()" id="gBtnUpload" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-2">
+            <button onclick="gUploadBigFile()" id="gBtnUpload" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-50">
               <i data-lucide="upload" class="w-4 h-4"></i>
               <span>Bắt Đầu Tải Lên Đám Mây</span>
             </button>
 
+            <!-- Tiến trình Chunk Upload -->
             <div id="gProgressWidget" class="hidden bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5">
               <div class="flex justify-between text-[11px] text-slate-300">
-                <span id="gStatusText" class="truncate max-w-[300px]">Đang cắt nhỏ dữ liệu...</span>
+                <span id="gStatusText" class="truncate max-w-[300px]">Đang xử lý dữ liệu...</span>
                 <span id="gPercentText" class="font-bold text-emerald-400">0%</span>
               </div>
               <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
@@ -265,7 +268,7 @@
       </div>
     </div>
 
-    <!-- MODAL LỊCH SỬ SAO LƯU SHEET -->
+    <!-- MODAL LỊCH SỬ SAO LƯU -->
     <div id="backupModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
       <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[80vh]">
         <div class="p-4 border-b border-slate-800 flex justify-between items-center">
@@ -282,59 +285,58 @@
     </div>
 
     <!-- MODAL BẢNG NỘI QUY -->
-    <div id="rulesModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4">
-      <div class="bg-slate-900 border border-rose-500/30 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col">
-        <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-rose-500/10">
-          <div class="flex items-center gap-2 text-rose-400">
+    <div id="rulesModal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
+        <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+          <div class="flex items-center gap-2 text-amber-400">
             <i data-lucide="shield-alert" class="w-5 h-5"></i>
-            <h3 class="text-sm font-bold">Nội Quy & Quy Định Khai Thác</h3>
+            <h3 class="text-sm font-bold text-slate-100">Bảng Nội Quy & Điều Khoản Sử Dụng</h3>
           </div>
           <button onclick="closeRulesModal()" class="text-slate-400 hover:text-slate-100">
             <i data-lucide="x" class="w-5 h-5"></i>
           </button>
         </div>
-        <div class="p-6 text-xs text-slate-300 space-y-3 leading-relaxed">
-          <p class="font-semibold text-rose-400">Vui lòng tuân thủ nghiêm ngặt các quy định sau để không bị khóa tài khoản vĩnh viễn:</p>
-          <ul class="list-disc pl-4 space-y-1.5 text-slate-300">
-            <li><b>Dung lượng lưu trữ tối đa:</b> 100 GB per account. Không cố tình vượt giới hạn.</li>
-            <li><b>Nội dung cấm:</b> Nghiêm cấm lưu trữ tài liệu phản động, đồi trụy, vi phạm pháp luật, mã độc, virus độc hại.</li>
-            <li><b>Chống Spam:</b> Không liên tục gửi nhiều yêu cầu tải tệp song song hoặc dùng tool tự động spam lệnh.</li>
-            <li><b>Bảo mật thông tin:</b> Tự bảo quản tài khoản cá nhân, không chia sẻ cho bên thứ ba.</li>
-          </ul>
-          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-400 mt-2">
-            ⚠️ Hệ thống tự động quét vi phạm. Mọi hành vi vi phạm sẽ bị đình chỉ khai thác ngay lập tức mà không cần báo trước.
+        <div class="p-5 overflow-y-auto space-y-4 text-xs text-slate-300 leading-relaxed">
+          <div class="bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl text-amber-300">
+            ⚠️ <b>Lưu ý quan trọng:</b> Vi phạm các quy định dưới đây có thể dẫn đến việc tài khoản bị khóa vĩnh viễn mà không báo trước.
           </div>
+          
+          <ul class="space-y-2.5 list-disc pl-4 text-slate-300">
+            <li><b>Giới hạn dung lượng:</b> Tổng dung lượng lưu trữ tối đa là <b>100 GB</b>. Khi vượt quá ngưỡng này, chức năng upload sẽ bị khóa tự động.</li>
+            <li><b>Hành vi Spam:</b> Nghiêm cấm gửi lệnh tải lên liên tục hoặc gửi song song nhiều yêu cầu. Hệ thống có cơ chế tự động khóa nếu phát hiện tần suất bất thường.</li>
+            <li><b>Nội dung cấm:</b> Không tải lên các nội dung vi phạm pháp luật, mã độc, virus, dữ liệu độc hại hoặc tệp tin bị cấm.</li>
+            <li><b>Bảo mật tài khoản:</b> Khách hàng có trách nhiệm bảo mật Mã Thiết Bị (MTB) và Mật khẩu. Hệ thống không chịu trách nhiệm khi thông tin truy cập bị rò rỉ từ phía người dùng.</li>
+          </ul>
         </div>
-        <div class="p-4 border-t border-slate-800 bg-slate-950 flex justify-end">
-          <button onclick="closeRulesModal()" class="bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs px-4 py-2 rounded-xl transition">Tôi Đã Hiểu & Đăng Nhập</button>
+        <div class="p-4 border-t border-slate-800 text-right">
+          <button onclick="closeRulesModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-xl transition">
+            Đã Hiểu & Đồng Ý
+          </button>
         </div>
       </div>
     </div>
 
   </div>
 
-  <!-- SCRIPT LOGIC MÃ HÓA BẢO MẬT -->
+  <!-- SCRIPT LOGIC TOÀN BỘ HỆ THỐNG -->
   <script>
     // ==========================================
-    // ⚙️ ẨN VÀ MÃ HÓA CÁC ĐƯỜNG LINK/KEY NHẠY CẢM (BASE64 OBFUSCATION)
+    // ⚙️ CẤU HÌNH CỐ ĐỊNH SYSTEM
     // ==========================================
-    const _0x1a = "aHR0cHM6Ly9kb2NzLmdvb2dsZS5jb20vc3ByZWFkc2hlZXRzL2QvZS8yUEFDWC0xdlM3aUxHZERXYTdZYXJtbHd5dDUxWVFreVRBRlFZTzU5MUJ4aUZuR1JfUUZDQXFJUC1PU1VIX216RVpjWlpPUV85RUpYLTVzWEtqT0NkL3B1Yj9vdXRwdXQ9Y3N2";
-    const _0x2b = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J5M3MwZkpBLVVjM2ZoWUZNLTJiVXJMVGZaVHpuY2drdkhQamNhWmxyRFFOS21TYzNuLXo5UEpfbzdvN0J2bHpLbkF3L2V4ZWM=";
-
-    const AUTH_SHEET_URL = atob(_0x1a);
-    const BACKUP_SCRIPT_URL = atob(_0x2b);
+    const AUTH_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS7iLGeDWa7Yarmlwyt51YQkyvTAFQYO591BxiFnGR_QFCAqIP-OSUH_mzEZcZZOQ_9EJX-5sXKjOCd/pub?output=csv';
+    const BACKUP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby3s0fJA-Uc3fhYFM-2bUrLdVZaTzncgkvHPjcaZlrDQNKmSc3n-z9PJ_o7o7BvlzKnAw/exec';
 
     const GRAMJS_API_ID = 37106540; 
     const GRAMJS_API_HASH = "db90fe26fe664946cb8d2427d9f15339"; 
-    const MAX_STORAGE_BYTES = 100 * 1024 * 1024 * 1024; // 100 GB
+    const MAX_STORAGE_BYTES = 100 * 1024 * 1024 * 1024; // GIỚI HẠN TỐI ĐA 100GB
 
-    // Khắc phục triệt để lỗi StringSession is not a constructor
-    function getGramClasses() {
+    // Lấy Class GramJS an toàn (Sửa lỗi "StringSession is not a constructor")
+    function getGramJSClasses() {
       const g = window.gramjs || window.telegram || {};
-      const sessions = g.sessions || {};
+      const StringSessionClass = (g.sessions && g.sessions.StringSession) ? g.sessions.StringSession : (window.StringSession || null);
       return {
-        TelegramClient: g.TelegramClient,
-        StringSession: sessions.StringSession
+        TelegramClient: g.TelegramClient || null,
+        StringSession: StringSessionClass
       };
     }
 
@@ -345,15 +347,18 @@
     let selectedFileIds = new Set();
     let breadcrumbStack = [{ id: 'root', name: 'Kho Lưu Trữ' }];
 
-    // Khóa chống Spam tiến trình upload song song
-    let isUploadingProcess = false;
+    // Khóa chống Spam Request
+    let isUploading = false;
+    let isSendingOTP = false;
 
+    // Quản lý Instance GramJS
     let gramClient = null;
     let gPhoneCodeHash = null;
     let gPhoneNumber = null;
 
     lucide.createIcons();
 
+    // Tự động kiểm tra Đăng nhập
     window.addEventListener('DOMContentLoaded', () => {
       const savedUser = localStorage.getItem('CLOUD_USER_DATA');
       if (savedUser) {
@@ -364,7 +369,7 @@
     });
 
     // ==========================================
-    // 🔑 1. AUTH
+    // 🔑 1. DỊCH VỤ XÁC THỰC MULTI-USER
     // ==========================================
     async function handleLogin(e) {
       e.preventDefault();
@@ -401,7 +406,7 @@
           errBox.classList.remove('hidden');
         }
       } catch (err) {
-        errBox.innerText = 'Lỗi truy vấn dữ liệu xác thực!';
+        errBox.innerText = 'Lỗi truy vấn dữ liệu từ cơ sở dữ liệu!';
         errBox.classList.remove('hidden');
       } finally {
         btn.disabled = false;
@@ -423,7 +428,7 @@
     }
 
     // ==========================================
-    // ⚡ 2. GRAMJS SIÊU UPLOAD (SỬA DỨT ĐIỂM LỖI STRINGSESSION)
+    // ⚡ 2. MODULE SIÊU UPLOAD (>100MB)
     // ==========================================
     function openGramJSModal() {
       document.getElementById('gramjsModal').classList.remove('hidden');
@@ -439,42 +444,50 @@
       const authStatus = document.getElementById('gAuthStatus');
       const uploadSec = document.getElementById('gramjsUploadSection');
 
-      const { TelegramClient, StringSession } = getGramClasses();
-
+      const { TelegramClient, StringSession } = getGramJSClasses();
       if (!TelegramClient || !StringSession) {
-        authStatus.innerText = "⚠️ Thư viện đang khởi tạo, vui lòng đợi 2 giây...";
-        setTimeout(checkGramJSSession, 1000);
+        authStatus.innerText = "⚠️ Đang nạp thư viện kết nối, vui lòng thử lại sau vài giây...";
         return;
       }
 
       if (savedSession) {
-        authStatus.innerText = "⏳ Đang kết nối MTProto...";
+        authStatus.innerText = "⏳ Đang kết nối máy chủ lưu trữ...";
         try {
           gramClient = new TelegramClient(new StringSession(savedSession), GRAMJS_API_ID, GRAMJS_API_HASH, { connectionRetries: 3 });
           await gramClient.connect();
 
           const me = await gramClient.getMe();
           if (me) {
-            authStatus.innerText = `✅ Kết nối thành công: ${me.firstName || ''} (${me.phone})`;
+            authStatus.innerText = `✅ Đã kết nối: ${me.firstName || ''} (${me.phone})`;
             uploadSec.classList.remove('opacity-50', 'pointer-events-none');
             document.getElementById('gramjsAuthSection').classList.add('hidden');
           }
         } catch (e) {
-          authStatus.innerText = "⚠️ Phiên hết hạn, vui lòng xác thực lại.";
+          authStatus.innerText = "⚠️ Phiên kết nối hết hạn, vui lòng xác thực OTP lại.";
           localStorage.removeItem('gramjs_session');
         }
       } else {
-        authStatus.innerText = "Vui lòng nhập SĐT để cấp quyền upload file lớn.";
+        authStatus.innerText = "Vui lòng nhập SĐT để cấp quyền upload tệp dung lượng lớn.";
       }
     }
 
     async function gSendCode() {
+      if (isSendingOTP) return; // Chống spam
+      
       gPhoneNumber = document.getElementById('gInputPhone').value.trim();
       const status = document.getElementById('gAuthStatus');
+      const btn = document.getElementById('gBtnSendCode');
       if (!gPhoneNumber) return alert('Chưa nhập SĐT!');
 
-      const { TelegramClient, StringSession } = getGramClasses();
-      status.innerText = "⏳ Đang gửi mã OTP...";
+      const { TelegramClient, StringSession } = getGramJSClasses();
+      if (!TelegramClient || !StringSession) {
+        return alert("Chưa nạp xong thư viện GramJS. Vui lòng thử lại sau 2 giây!");
+      }
+
+      isSendingOTP = true;
+      btn.disabled = true;
+      status.innerText = "⏳ Đang gửi mã OTP xác thực...";
+
       try {
         gramClient = new TelegramClient(new StringSession(""), GRAMJS_API_ID, GRAMJS_API_HASH, { connectionRetries: 3 });
         await gramClient.connect();
@@ -484,9 +497,12 @@
 
         document.getElementById('gStepPhone').classList.add('hidden');
         document.getElementById('gStepOTP').classList.remove('hidden');
-        status.innerText = "✅ Đã gửi mã OTP!";
+        status.innerText = "✅ Đã gửi mã OTP. Hãy kiểm tra ứng dụng nhận tin!";
       } catch (err) {
         status.innerText = "❌ Lỗi: " + err.message;
+      } finally {
+        isSendingOTP = false;
+        btn.disabled = false;
       }
     }
 
@@ -494,8 +510,13 @@
       const code = document.getElementById('gInputOTP').value.trim();
       const pass2FA = document.getElementById('gInput2FA').value.trim();
       const status = document.getElementById('gAuthStatus');
+      const btn = document.getElementById('gBtnVerifyOTP');
+
+      if (!code) return alert('Vui lòng nhập OTP!');
 
       status.innerText = "⏳ Đang xác thực...";
+      btn.disabled = true;
+
       try {
         await gramClient.signIn({
           phoneNumber: gPhoneNumber,
@@ -506,38 +527,40 @@
 
         localStorage.setItem('gramjs_session', gramClient.session.save());
         const me = await gramClient.getMe();
-        status.innerText = `✅ Kết nối thành công: ${me.firstName}`;
+        status.innerText = `✅ Đã kết nối: ${me.firstName}`;
         document.getElementById('gramjsAuthSection').classList.add('hidden');
         document.getElementById('gramjsUploadSection').classList.remove('opacity-50', 'pointer-events-none');
       } catch (err) {
-        status.innerText = "❌ Lỗi: " + err.message;
+        status.innerText = "❌ Lỗi OTP/Mật khẩu: " + err.message;
+      } finally {
+        btn.disabled = false;
       }
     }
 
     async function gUploadBigFile() {
-      if (isUploadingProcess) return alert("⚠️ Đang có một tiến trình upload đang chạy, không thể spam lệnh!");
+      if (isUploading) return alert("Đang có tiến trình tải lên, vui lòng đợi!");
 
       const file = document.getElementById('gFileInput').files[0];
       if (!file) return alert('Chưa chọn tệp!');
 
-      // Kiểm tra tràn 100GB
-      const currentTotal = dbFiles.reduce((acc, curr) => acc + (curr.size || 0), 0);
-      if (currentTotal + file.size > MAX_STORAGE_BYTES) {
-        return alert("⛔ Kho lưu trữ đã vượt quá giới hạn 100 GB! Vui lòng xóa bớt file trước khi tải thêm.");
+      // Kiểm tra giới hạn 100GB
+      const currentTotalBytes = dbFiles.reduce((acc, curr) => acc + (curr.size || 0), 0);
+      if (currentTotalBytes + file.size > MAX_STORAGE_BYTES) {
+        return alert("❌ Dung lượng kho lưu trữ đã vượt quá giới hạn 100 GB! Không thể tải thêm.");
       }
 
-      isUploadingProcess = true;
       const progressWidget = document.getElementById('gProgressWidget');
       const progressBar = document.getElementById('gProgressBar');
       const percentText = document.getElementById('gPercentText');
       const statusText = document.getElementById('gStatusText');
       const btn = document.getElementById('gBtnUpload');
 
+      isUploading = true;
       progressWidget.classList.remove('hidden');
       btn.disabled = true;
 
       try {
-        statusText.innerText = "⏳ Đang upload dữ liệu...";
+        statusText.innerText = "⏳ Đang mã hóa và upload dữ liệu...";
         
         const uploadedFile = await gramClient.uploadFile({
           file: file,
@@ -549,7 +572,7 @@
           }
         });
 
-        statusText.innerText = "⏳ Đang tạo gói tệp...";
+        statusText.innerText = "⏳ Đang khởi tạo thông tin tệp...";
         const msg = await gramClient.sendFile("me", {
           file: uploadedFile,
           caption: `📂 File: ${file.name}\n💾 Dung lượng: ${formatBytes(file.size)}`
@@ -572,19 +595,19 @@
         updateStorageUsage();
         autoExportBackupToCloud();
 
-        alert('🎉 Upload file thành công!');
+        alert('🎉 Tải lên tệp dung lượng lớn thành công!');
         closeGramJSModal();
       } catch (err) {
-        alert('❌ Lỗi upload: ' + err.message);
+        alert('❌ Lỗi tải tệp: ' + err.message);
       } finally {
-        isUploadingProcess = false;
+        isUploading = false;
         btn.disabled = false;
         progressWidget.classList.add('hidden');
       }
     }
 
     // ==========================================
-    // ☁️ 3. CORE FILE OPERATIONS & BULK ACTIONS
+    // ☁️ 3. ĐỒNG BỘ CƠ SỞ DỮ LIỆU & THAO TÁC FILE
     // ==========================================
     async function autoExportBackupToCloud() {
       if (!CURRENT_MTB) return;
@@ -621,17 +644,18 @@
 
     async function uploadFiles(files) {
       if (!files || files.length === 0) return;
-      if (isUploadingProcess) return alert("⚠️ Đang xử lý file khác, không gửi lệnh song song!");
+      if (isUploading) return alert("Đang có tiến trình tải tệp khác, vui lòng đợi!");
 
-      let incomingSize = 0;
-      for (let file of files) incomingSize += file.size;
+      // Tính tổng dung lượng cần upload
+      let incomingBytes = 0;
+      for (let i = 0; i < files.length; i++) incomingBytes += files[i].size;
 
-      const currentTotal = dbFiles.reduce((acc, curr) => acc + (curr.size || 0), 0);
-      if (currentTotal + incomingSize > MAX_STORAGE_BYTES) {
-        return alert("⛔ Kho đã đầy (Vượt quá 100 GB). Không thể tải thêm!");
+      const currentTotalBytes = dbFiles.reduce((acc, curr) => acc + (curr.size || 0), 0);
+      if (currentTotalBytes + incomingBytes > MAX_STORAGE_BYTES) {
+        return alert("❌ Dung lượng các tệp này khiến tổng dữ liệu vượt quá giới hạn 100 GB! Hệ thống từ chối tải lên.");
       }
 
-      isUploadingProcess = true;
+      isUploading = true;
       const progressContainer = document.getElementById('uploadProgressContainer');
       const progressBar = document.getElementById('uploadProgressBar');
       const percentText = document.getElementById('uploadPercentText');
@@ -640,7 +664,7 @@
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         if (file.size > 50 * 1024 * 1024) {
-          alert(`File ${file.name} >50MB. Chọn nút "Siêu Upload"!`);
+          alert(`File "${file.name}" vượt quá 50MB. Vui lòng chọn tính năng "Siêu Upload" trên thanh menu!`);
           continue;
         }
 
@@ -650,8 +674,7 @@
 
         await new Promise((resolve) => {
           const xhr = new XMLHttpRequest();
-          const apiEndpoint = atob("aHR0cHM6Ly9hcGkudGVsZWdyYW0ub3JnL2JvdA==") + CURRENT_USER.token + "/sendDocument";
-          xhr.open('POST', apiEndpoint);
+          xhr.open('POST', `https://api.telegram.org/bot${CURRENT_USER.token}/sendDocument`);
           xhr.upload.onprogress = (e) => {
             if (e.lengthComputable) {
               const percent = Math.round((e.loaded / e.total) * 100);
@@ -665,7 +688,7 @@
               if (res.ok) {
                 const doc = res.result.document;
                 dbFiles.push({
-                  id: 'file_' + Date.now(),
+                  id: 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
                   parentId: currentFolderId,
                   name: file.name,
                   size: file.size,
@@ -684,7 +707,8 @@
         });
       }
 
-      isUploadingProcess = false;
+      isUploading = false;
+      document.getElementById('fileInput').value = '';
       progressContainer.classList.add('hidden');
       renderFiles();
       updateStorageUsage();
@@ -709,8 +733,6 @@
       const grid = document.getElementById('fileListGrid');
       const emptyState = document.getElementById('emptyListState');
       grid.innerHTML = '';
-      selectedFileIds.clear();
-      updateBulkUI();
 
       const currentItems = dbFiles.filter(item => item.parentId === currentFolderId);
       if (currentItems.length === 0) {
@@ -721,12 +743,18 @@
         emptyState.classList.remove('flex');
 
         currentItems.forEach(item => {
+          const isChecked = selectedFileIds.has(item.id);
           const card = document.createElement('div');
-          card.className = 'bg-slate-950 border border-slate-800 hover:border-indigo-500/50 p-3 rounded-xl transition group flex flex-col justify-between relative';
+          card.className = `bg-slate-950 border ${isChecked ? 'border-indigo-500 bg-indigo-950/20' : 'border-slate-800'} hover:border-indigo-500/50 p-3 rounded-xl transition group flex flex-col justify-between relative`;
+
+          const checkboxHtml = `
+            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleSelectFile('${item.id}', event)" class="absolute top-3 left-3 z-10 w-4 h-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-0 cursor-pointer" />
+          `;
 
           if (item.type === 'folder') {
             card.innerHTML = `
-              <div onclick="enterFolder('${item.id}', '${item.name}')" class="cursor-pointer">
+              ${checkboxHtml}
+              <div onclick="enterFolder('${item.id}', '${item.name}')" class="cursor-pointer pl-6">
                 <div class="flex items-center gap-2 text-amber-400 mb-2">
                   <i data-lucide="folder" class="w-6 h-6 fill-amber-400/10"></i>
                   <span class="text-xs font-semibold text-slate-200 truncate">${item.name}</span>
@@ -739,89 +767,97 @@
             `;
           } else {
             card.innerHTML = `
-              <div>
-                <div class="flex items-center justify-between mb-2">
-                  <input type="checkbox" data-id="${item.id}" onchange="toggleSelectFile('${item.id}', this.checked)" class="file-checkbox rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0" />
-                  <button onclick="deleteItem('${item.id}')" class="text-slate-600 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition p-1">
-                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                  </button>
+              ${checkboxHtml}
+              <div onclick="previewFile('${item.id}')" class="cursor-pointer pl-6">
+                <div class="flex items-center gap-2 text-indigo-400 mb-2">
+                  <i data-lucide="${getFileIcon(item.mimeType)}" class="w-6 h-6"></i>
+                  <span class="text-xs font-semibold text-slate-200 truncate">${item.name}</span>
                 </div>
-                <div onclick="previewFile('${item.id}')" class="cursor-pointer">
-                  <div class="flex items-center gap-2 text-indigo-400 mb-2">
-                    <i data-lucide="${getFileIcon(item.mimeType)}" class="w-6 h-6"></i>
-                    <span class="text-xs font-semibold text-slate-200 truncate">${item.name}</span>
-                  </div>
-                  <div class="text-[10px] text-slate-500 flex items-center justify-between">
-                    <span>${formatBytes(item.size)}</span>
-                    ${item.isBigFile ? '<span class="text-[9px] bg-emerald-500/10 text-emerald-400 px-1 rounded">2GB</span>' : ''}
-                  </div>
+                <div class="text-[10px] text-slate-500 flex items-center justify-between">
+                  <span>${formatBytes(item.size)}</span>
+                  ${item.isBigFile ? '<span class="text-[9px] bg-emerald-500/10 text-emerald-400 px-1 rounded">2GB</span>' : ''}
                 </div>
               </div>
+              <button onclick="deleteItem('${item.id}')" class="absolute top-2 right-2 text-slate-600 hover:text-rose-400 opacity-0 group-hover:opacity-100 transition p-1">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
             `;
           }
           grid.appendChild(card);
         });
       }
       lucide.createIcons();
+      updateMultiActionBar();
     }
 
-    // MULTI-SELECT HANDLERS
-    function toggleSelectFile(id, isChecked) {
-      if (isChecked) selectedFileIds.add(id);
-      else selectedFileIds.delete(id);
-      updateBulkUI();
+    // ==========================================
+    // 🎯 CHỨC NĂNG CHỌN NHIỀU FILE ĐỂ XÓA/TẢI
+    // ==========================================
+    function toggleSelectFile(id, event) {
+      event.stopPropagation();
+      if (selectedFileIds.has(id)) {
+        selectedFileIds.delete(id);
+      } else {
+        selectedFileIds.add(id);
+      }
+      renderFiles();
     }
 
-    function toggleSelectAll(masterCert) {
-      const checkboxes = document.querySelectorAll('.file-checkbox');
-      checkboxes.forEach(cb => {
-        cb.checked = masterCert.checked;
-        const id = cb.getAttribute('data-id');
-        if (masterCert.checked) selectedFileIds.add(id);
-        else selectedFileIds.delete(id);
-      });
-      updateBulkUI();
-    }
-
-    function updateBulkUI() {
-      const bulkContainer = document.getElementById('bulkActions');
-      if (selectedFileIds.size > 0) bulkContainer.classList.remove('hidden');
-      else bulkContainer.classList.add('hidden');
+    function updateMultiActionBar() {
+      const actionGroup = document.getElementById('multiActionGroup');
+      const countLabel = document.getElementById('selectedCount');
+      if (selectedFileIds.size > 0) {
+        actionGroup.classList.remove('hidden');
+        actionGroup.classList.add('flex');
+        countLabel.innerText = selectedFileIds.size;
+      } else {
+        actionGroup.classList.add('hidden');
+        actionGroup.classList.remove('flex');
+      }
     }
 
     function deleteSelectedFiles() {
-      if (!confirm(`Xóa ${selectedFileIds.size} tệp đã chọn?`)) return;
+      if (selectedFileIds.size === 0) return;
+      if (!confirm(`Xác nhận xóa ${selectedFileIds.size} mục đã chọn?`)) return;
+
       dbFiles = dbFiles.filter(item => !selectedFileIds.has(item.id));
+      selectedFileIds.clear();
       renderFiles();
       updateStorageUsage();
       autoExportBackupToCloud();
     }
 
     async function downloadSelectedFiles() {
-      alert(`Đang khởi tạo tải ${selectedFileIds.size} tệp... Trình duyệt sẽ hỏi quyền tải xuống.`);
-      for (let id of selectedFileIds) {
-        const file = dbFiles.find(f => f.id === id);
-        if (file && !file.isBigFile) {
-          try {
-            const apiGet = atob("aHR0cHM6Ly9hcGkudGVsZWdyYW0ub3JnL2JvdA==") + CURRENT_USER.token + `/getFile?file_id=${file.fileId}`;
-            const res = await fetch(apiGet);
-            const data = await res.json();
-            if (data.ok) {
-              const fileUrl = atob("aHR0cHM6Ly9hcGkudGVsZWdyYW0ub3JnL2ZpbGUvYm90") + CURRENT_USER.token + "/" + data.result.file_path;
-              const a = document.createElement('a');
-              a.href = fileUrl;
-              a.download = file.name;
-              document.body.appendChild(a);
-              a.click();
-              a.remove();
-            }
-          } catch (e) {}
+      if (selectedFileIds.size === 0) return;
+
+      const itemsToDownload = dbFiles.filter(f => selectedFileIds.has(f.id) && f.type === 'file');
+      if (itemsToDownload.length === 0) return alert('Chỉ hỗ trợ tải về các Tệp tin!');
+
+      for (const file of itemsToDownload) {
+        if (file.isBigFile) continue;
+        try {
+          const res = await fetch(`https://api.telegram.org/bot${CURRENT_USER.token}/getFile?file_id=${file.fileId}`);
+          const data = await res.json();
+          if (data.ok) {
+            const fileUrl = `https://api.telegram.org/file/bot${CURRENT_USER.token}/${data.result.file_path}`;
+            const a = document.createElement('a');
+            a.href = fileUrl;
+            a.download = file.name;
+            a.target = '_blank';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            await new Promise(r => setTimeout(r, 800)); // Chống nghẽn tải hàng loạt
+          }
+        } catch (e) {
+          console.error('Lỗi tải file:', file.name);
         }
       }
     }
 
     function enterFolder(id, name) {
       currentFolderId = id;
+      selectedFileIds.clear();
       breadcrumbStack.push({ id, name });
       renderBreadcrumb();
       renderFiles();
@@ -830,6 +866,7 @@
     function navigateToBreadcrumb(index) {
       breadcrumbStack = breadcrumbStack.slice(0, index + 1);
       currentFolderId = breadcrumbStack[breadcrumbStack.length - 1].id;
+      selectedFileIds.clear();
       renderBreadcrumb();
       renderFiles();
     }
@@ -856,6 +893,7 @@
     function deleteItem(id) {
       if (!confirm('Xóa tệp/thư mục này?')) return;
       dbFiles = dbFiles.filter(item => item.id !== id && item.parentId !== id);
+      selectedFileIds.delete(id);
       renderFiles();
       updateStorageUsage();
       autoExportBackupToCloud();
@@ -876,8 +914,8 @@
       if (file.isBigFile) {
         content.innerHTML = `
           <div class="text-center space-y-3 p-4">
-            <div class="text-emerald-400 text-sm font-semibold">⚡ Tệp Dung Lượng Lớn (MTProto)</div>
-            <p class="text-xs text-slate-400 max-w-sm mx-auto">Vui lòng kiểm tra mục <b>Tin nhắn đã lưu (Saved Messages)</b> ứng dụng cá nhân để xem/tải về.</p>
+            <div class="text-emerald-400 text-sm font-semibold">⚡ Tệp Dung Lượng Lớn Bảo Mật</div>
+            <p class="text-xs text-slate-400 max-w-sm mx-auto">Tệp này được lưu trữ riêng trên máy chủ cá nhân của bạn. Vui lòng kiểm tra mục tin nhắn cá nhân trong ứng dụng liên kết để tải xuống trực tiếp!</p>
           </div>
         `;
         downloadBtn.style.display = 'none';
@@ -885,15 +923,14 @@
       }
 
       downloadBtn.style.display = 'inline-flex';
-      content.innerHTML = `<div class="text-xs text-indigo-400">⏳ Đang lấy link...</div>`;
+      content.innerHTML = `<div class="text-xs text-indigo-400">⏳ Đang lấy liên kết tải dữ liệu...</div>`;
 
       try {
-        const apiGet = atob("aHR0cHM6Ly9hcGkudGVsZWdyYW0ub3JnL2JvdA==") + CURRENT_USER.token + `/getFile?file_id=${file.fileId}`;
-        const res = await fetch(apiGet);
+        const res = await fetch(`https://api.telegram.org/bot${CURRENT_USER.token}/getFile?file_id=${file.fileId}`);
         const data = await res.json();
 
         if (data.ok) {
-          const downloadUrl = atob("aHR0cHM6Ly9hcGkudGVsZWdyYW0ub3JnL2ZpbGUvYm90") + CURRENT_USER.token + "/" + data.result.file_path;
+          const downloadUrl = `https://api.telegram.org/file/bot${CURRENT_USER.token}/${data.result.file_path}`;
           downloadBtn.href = downloadUrl;
 
           if (file.mimeType && file.mimeType.startsWith('image/')) {
@@ -901,11 +938,13 @@
           } else if (file.mimeType && file.mimeType.startsWith('video/')) {
             content.innerHTML = `<video src="${downloadUrl}" controls class="max-h-full max-w-full rounded-lg"></video>`;
           } else {
-            content.innerHTML = `<div class="text-center text-slate-400 text-xs"><a href="${downloadUrl}" target="_blank" class="text-indigo-400 underline">Tải xuống tệp</a></div>`;
+            content.innerHTML = `<div class="text-center text-slate-400 text-xs">Không hỗ trợ xem nhanh.<br><a href="${downloadUrl}" target="_blank" class="text-indigo-400 underline mt-2 inline-block">Nhấn vào đây để tải xuống</a></div>`;
           }
+        } else {
+          content.innerHTML = `<div class="text-xs text-amber-400">Không thể tạo liên kết tải về cho tệp này!</div>`;
         }
       } catch (err) {
-        content.innerHTML = `<div class="text-xs text-rose-400">Lỗi kết nối tệp!</div>`;
+        content.innerHTML = `<div class="text-xs text-rose-400">Lỗi kết nối tệp xem trước!</div>`;
       }
     }
 
@@ -913,9 +952,13 @@
       document.getElementById('previewModal').classList.add('hidden');
     }
 
+    // ==========================================
+    // 📋 NỘI QUY MODAL & BẢN SAO LƯU
+    // ==========================================
     function openRulesModal() {
       document.getElementById('rulesModal').classList.remove('hidden');
     }
+
     function closeRulesModal() {
       document.getElementById('rulesModal').classList.add('hidden');
     }
@@ -924,13 +967,13 @@
       const modal = document.getElementById('backupModal');
       const container = document.getElementById('backupListContainer');
       modal.classList.remove('hidden');
-      container.innerHTML = `<div class="text-center py-6 text-indigo-400 text-xs">⏳ Đang đọc danh sách...</div>`;
+      container.innerHTML = `<div class="text-center py-6 text-indigo-400 text-xs">⏳ Đang đọc danh sách bản lưu...</div>`;
 
       try {
         const res = await fetch(`${BACKUP_SCRIPT_URL}?mtb=${CURRENT_MTB}&t=${Date.now()}`);
         const listData = await res.json();
         if (!listData || listData.length === 0) {
-          container.innerHTML = `<div class="text-center py-6 text-slate-500 text-xs">Chưa có bản lưu nào.</div>`;
+          container.innerHTML = `<div class="text-center py-6 text-slate-500 text-xs">Chưa có bản sao lưu nào.</div>`;
           return;
         }
 
@@ -939,12 +982,14 @@
           const item = listData[i];
           const fullJsonData = (item.mainData || "") + (item.subData || "");
           html += `
-            <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl flex items-center justify-between">
+            <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl flex items-center justify-between hover:border-indigo-500/50 transition">
               <div>
                 <div class="text-xs font-bold text-slate-200">🕒 ${item.time}</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">Thiết bị: ${CURRENT_MTB}</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">Mã thiết bị: ${CURRENT_MTB}</div>
               </div>
-              <button onclick="applyBackupFromCloud('${encodeURIComponent(fullJsonData)}')" class="bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-xs px-3 py-1.5 rounded-lg font-semibold">Khôi Phục</button>
+              <button onclick="applyBackupFromCloud('${encodeURIComponent(fullJsonData)}')" class="bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 text-xs px-3 py-1.5 rounded-lg font-semibold transition">
+                📥 Khôi Phục
+              </button>
             </div>
           `;
         }
@@ -956,6 +1001,7 @@
 
     function applyBackupFromCloud(encodedData) {
       dbFiles = JSON.parse(decodeURIComponent(encodedData));
+      selectedFileIds.clear();
       renderFiles();
       updateStorageUsage();
       closeBackupModal();
@@ -970,19 +1016,17 @@
       document.getElementById('storageUsageText').innerText = formatBytes(totalBytes);
       document.getElementById('fileCountText').innerText = `${dbFiles.filter(i => i.type === 'file').length} tệp`;
       
+      // Tính phần trăm trên tổng 100 GB
       const percent = Math.min(100, (totalBytes / MAX_STORAGE_BYTES) * 100);
-      const bar = document.getElementById('storageBar');
-      bar.style.width = `${percent}%`;
+      const storageBar = document.getElementById('storageBar');
+      storageBar.style.width = `${percent}%`;
 
-      const uploadBtnLabel = document.getElementById('uploadBtnLabel');
-      if (totalBytes >= MAX_STORAGE_BYTES) {
-        bar.classList.remove('bg-indigo-500');
-        bar.classList.add('bg-rose-500');
-        uploadBtnLabel.classList.add('opacity-50', 'pointer-events-none');
+      if (percent >= 100) {
+        storageBar.classList.remove('bg-indigo-500');
+        storageBar.classList.add('bg-rose-500');
       } else {
-        bar.classList.remove('bg-rose-500');
-        bar.classList.add('bg-indigo-500');
-        uploadBtnLabel.classList.remove('opacity-50', 'pointer-events-none');
+        storageBar.classList.remove('bg-rose-500');
+        storageBar.classList.add('bg-indigo-500');
       }
     }
 
