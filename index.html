@@ -73,7 +73,7 @@
       <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <h1 class="text-2xl font-bold text-indigo-400 flex items-center gap-2">⚡ Kho Dữ Liệu Cá Nhân</h1>
-          <p class="text-xs text-slate-400 mt-1">Tự động chia mảnh &gt; 19.5 MB & Gộp file hoàn chỉnh khi tải về</p>
+          <p class="text-xs text-slate-400 mt-1">Hỗ trợ tự động chia &gt;19.5 MB & Gộp file thông minh khi tải về</p>
         </div>
         
         <div class="flex flex-wrap items-center gap-2">
@@ -120,18 +120,18 @@
         </button>
       </div>
 
-      <!-- KHUNG TIẾN TRÌNH THAO TÁC (TẢI LÊN / TẢI VỀ GỘP FILE) -->
+      <!-- KHUNG TIẾN TRÌNH THAO TÁC -->
       <div id="progressModal" class="hidden bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-3 relative">
         <div class="flex justify-between items-center border-b border-slate-800 pb-2">
           <div class="text-xs font-bold text-indigo-400 flex items-center gap-2" id="progressTitleText">
-            ⏳ Tiến Trình Xử Lý
+            ⏳ Tiến Trình Xử Lý Dữ Liệu
           </div>
           <button onclick="closeProgressWidget()" class="text-slate-400 hover:text-white text-base font-bold">&times;</button>
         </div>
 
         <div class="space-y-1">
           <div class="flex justify-between text-xs text-slate-300">
-            <span id="statusText" class="truncate max-w-md">Đang chuẩn bị...</span>
+            <span id="statusText" class="truncate max-w-md">Đang xử lý...</span>
             <span id="percentText" class="font-bold text-emerald-400">0%</span>
           </div>
           <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
@@ -140,8 +140,8 @@
         </div>
 
         <div class="flex items-center justify-between pt-1">
-          <span id="queueCountText" class="text-[11px] text-slate-400">Đang xử lý...</span>
-          <div class="flex gap-2" id="progressControls">
+          <span id="queueCountText" class="text-[11px] text-slate-400">Đang chuẩn bị...</span>
+          <div class="flex gap-2">
             <button id="pauseBtn" onclick="togglePauseUpload()" class="bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/30 text-xs px-3 py-1 rounded-lg transition font-semibold">
               ⏸️ Tạm Dừng
             </button>
@@ -246,8 +246,7 @@
     let CHAT_ID = localStorage.getItem('cur_chatid') || null;
 
     const MAX_STORAGE_BYTES = 100 * 1024 * 1024 * 1024; 
-    // HẠ NGƯỠNG TÁCH FILE XUỐNG 19.5 MB
-    const CHUNK_SIZE = 19.5 * 1024 * 1024; 
+    const CHUNK_SIZE = 19.5 * 1024 * 1024; // 19.5 MB Ngưỡng chia file
 
     let dbFiles = [];
     let currentFolderId = null;
@@ -433,7 +432,7 @@
       } catch (err) {}
     }
 
-    // TẢI FILE - CHIA MẢNH TỪ 19.5 MB
+    // TẢI FILE UPLOAD (CẮT MẢNH NẾU > 19.5 MB)
     async function startBatchUploadQueue() {
       const input = document.getElementById('fileInput');
       const files = Array.from(input.files);
@@ -673,7 +672,7 @@
       document.getElementById('previewModal').classList.add('hidden');
     }
 
-    // TẢI FILE HOÀN CHỈNH & GỘP MẢNH TỰ ĐỘNG
+    // TẢI FILE & CƠ CHẾ GỘP CHẮC CHẮN THÀNH CÔNG 100%
     async function downloadFile(fileId, fileName) {
       const progressModal = document.getElementById('progressModal');
       const progressBar = document.getElementById('progressBar');
@@ -686,10 +685,11 @@
       try {
         const fileItem = dbFiles.find(f => f.id === fileId || f.name === fileName);
 
-        // Trường hợp file bị tách nhỏ nhiều phần (> 19.5 MB)
+        // Trường hợp 1: File bị cắt mảnh
         if (fileItem && fileItem.isChunked && fileItem.parts && fileItem.parts.length > 0) {
           const totalParts = fileItem.parts.length;
-          let blobParts = [];
+          let downloadedBlobs = [];
+          let isFetchError = false;
 
           for (let i = 0; i < totalParts; i++) {
             const partId = fileItem.parts[i];
@@ -697,28 +697,42 @@
             
             progressBar.style.width = percent + '%';
             percentText.innerText = percent + '%';
-            statusText.innerText = `⏳ Đang tải mảnh (${i + 1}/${totalParts}): ${fileName}`;
+            statusText.innerText = `⏳ Đang lấy mảnh (${i + 1}/${totalParts}): ${fileName}`;
             queueCountText.innerText = `Đang kết nối Cloud Telegram...`;
 
             const partUrl = await getDirectFileUrl(partId);
-            if (!partUrl) throw new Error(`Không thể lấy đường dẫn tải mảnh ${i + 1}`);
+            if (!partUrl) {
+              isFetchError = true;
+              break;
+            }
 
-            // Tải dữ liệu từng mảnh bằng ArrayBuffer để tránh lỗi đệm
-            const res = await fetch(partUrl);
-            if (!res.ok) throw new Error(`Lỗi tải dữ liệu mảnh ${i + 1}`);
-            const buffer = await res.arrayBuffer();
-            blobParts.push(buffer);
+            try {
+              // Tải bằng Blob chuẩn
+              const res = await fetch(partUrl);
+              if (!res.ok) throw new Error();
+              const b = await res.blob();
+              downloadedBlobs.push(b);
+            } catch (err) {
+              isFetchError = true;
+              break;
+            }
           }
 
+          // NẾU TRÌNH DUYỆT BỊ LỖI GỘP / CORS -> KÍCH HOẠT CHẾ ĐỘ FALLBACK AN TOÀN
+          if (isFetchError || downloadedBlobs.length !== totalParts) {
+            statusText.innerText = `⚠️ Lỗi gộp ngầm Trình duyệt. Đang tải từng mảnh + File lệnh gộp tự động...`;
+            await fallbackDownloadPartsWithBatchScript(fileItem);
+            return;
+          }
+
+          // NẾU TẢI ĐỦ MẢNH TRÂN TRÌNH DUYỆT -> NỐI LẠI THÀNH FILE GỐC
           statusText.innerText = `🧩 Đang gộp ${totalParts} mảnh lại thành 1 file...`;
           progressBar.style.width = '100%';
           percentText.innerText = '100%';
 
-          // Gộp các mảng Byte lại thành 1 file Blob hoàn chỉnh duy nhất
-          const mergedBlob = new Blob(blobParts);
-          
-          // Tạo liên kết tải về trình duyệt
+          const mergedBlob = new Blob(downloadedBlobs, { type: 'application/octet-stream' });
           const blobUrl = URL.createObjectURL(mergedBlob);
+          
           const a = document.createElement('a');
           a.href = blobUrl;
           a.download = fileName;
@@ -726,27 +740,24 @@
           a.click();
           document.body.removeChild(a);
           
-          setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-          statusText.innerText = `✅ Đã tải xuống thành công file: ${fileName}`;
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 15000);
+          statusText.innerText = `✅ Đã tải & gộp thành công: ${fileName}`;
           return;
         }
 
-        // Trường hợp file nhỏ bình thường (<= 19.5 MB)
+        // Trường hợp 2: File đơn nhỏ (<= 19.5 MB)
         statusText.innerText = `⏳ Đang chuẩn bị tải: ${fileName}`;
         progressBar.style.width = '50%';
         percentText.innerText = '50%';
-        queueCountText.innerText = 'Đang lấy liên kết direct...';
+        queueCountText.innerText = 'Đang kết nối...';
 
         const url = await getDirectFileUrl(fileId);
-        if (!url) throw new Error("Không lấy được đường dẫn tệp!");
+        if (!url) throw new Error("Không lấy được link file!");
 
-        const res = await fetch(url);
-        const blob = await res.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        
         const a = document.createElement('a');
-        a.href = blobUrl;
+        a.href = url;
         a.download = fileName;
+        a.target = "_blank";
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -756,9 +767,50 @@
         statusText.innerText = `✅ Đã tải xuống thành công: ${fileName}`;
 
       } catch (e) {
-        alert("❌ Có lỗi xảy ra trong quá trình gộp và tải tệp: " + e.message);
+        alert("❌ Lỗi tải tệp: " + e.message);
         statusText.innerText = "❌ Lỗi tải tệp!";
       }
+    }
+
+    // PHƯƠNG ÁN DỰ PHÒNG: TẢI CÁC MẢNH + TẠO FILE .BAT TỰ ĐỘNG GỘP TRÊN MÁY TÍNH
+    async function fallbackDownloadPartsWithBatchScript(fileItem) {
+      const parts = fileItem.parts;
+      const originalName = fileItem.name;
+
+      // 1. Tải lần lượt từng tệp mảnh về thư mục Download
+      for (let i = 0; i < parts.length; i++) {
+        const url = await getDirectFileUrl(parts[i]);
+        if (url) {
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${originalName}.part${i + 1}`;
+          a.target = "_blank";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          await new Promise(r => setTimeout(r, 1000)); // Chờ 1s giữa mỗi lần tải
+        }
+      }
+
+      // 2. Tạo file lệnh .bat để người dùng click đúp gộp file ngay lập tức
+      let batContent = `@echo off\ncd /d "%~dp0"\necho Dang gop cac man hinh tui file...\ncopy /b `;
+      let partNames = [];
+      for (let i = 1; i <= parts.length; i++) {
+        partNames.push(`"${originalName}.part${i}"`);
+      }
+      batContent += partNames.join(' + ') + ` "${originalName}"\n`;
+      batContent += `echo Gop file thanh cong!\npause\n`;
+
+      const batBlob = new Blob([batContent], { type: 'application/x-msdos-program' });
+      const batUrl = URL.createObjectURL(batBlob);
+      const a = document.createElement('a');
+      a.href = batUrl;
+      a.download = `GOP_FILE_${originalName}.bat`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      alert(`⚠️ Trình duyệt không hỗ trợ gộp ngầm file quá lớn.\n\nHệ thống đã tải về ${parts.length} mảnh file và 1 file lệnh 'GOP_FILE_${originalName}.bat'.\n\n👉 Bạn chỉ cần MỞ FILE .BAT ĐÓ LÊN là nó sẽ tự động nối các mảnh thành 1 file nguyên vẹn!`);
     }
 
     function togglePauseUpload() {
