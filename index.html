@@ -10,7 +10,7 @@
   <!-- ĐOẠN MÃ TỰ ĐỘNG ĐỒNG BỘ DỮ LIỆU TỪ BOT VỀ TRANG WEB -->
 <script>
   // Link Web App Google Apps Script MỚI NHẤT của bạn
-  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxlEi8PseeLs8BWkyfjDtti9pJj83EnhccDXou4IdMsejMWTKk1i9qWatyo1rqeo7_ySQ/exec";
+  const GAS_API_URL = "https://script.google.com/macros/s/AKfycby8s0bjvHM9UJBK0gbM2m5lT5EU8EQLDNt4GM4Rc2Q8cYS6D_lWBOo_-aCEBvN7gSj99A/exec";
 
   // Hàm tự động kéo bản sao lưu mới nhất từ Bot về Web HTML
   async function syncStorageDataFromBot() {
@@ -22,37 +22,18 @@
         console.log("Đã cập nhật bản sao lưu mới nhất từ Bot:", data);
 
         // 1. Cập nhật chữ hiển thị dung lượng trên Web
-        const storageTextElem = document.querySelector(".storage-info-text") || document.getElementById("storageUsageText");
+        const storageTextElem = document.querySelector(".storage-info-text") || document.getElementById("storage-usage");
         if (storageTextElem) {
           storageTextElem.innerText = `${data.total_used_formatted} / 100 GB (${data.usage_percentage})`;
-        }
-
-        // Cập nhật thanh tiến trình dung lượng
-        const storageProgressBar = document.getElementById("storageProgressBar");
-        if (storageProgressBar && data.usage_percentage) {
-          storageProgressBar.style.width = `${data.usage_percentage}`;
         }
 
         // 2. Nếu trang web của bạn có hàm renderFileList, tự động vẽ lại danh sách file mới
         if (typeof renderFileList === "function") {
           renderFileList(data.files);
-        } else if (Array.isArray(data.files)) {
-          dbFiles = data.files;
-          renderFiles(getCurrentFolderItems());
         }
       }
     } catch (err) {
       console.error("Lỗi kết nối đồng bộ:", err);
-    }
-  }
-
-  // Hàm hỗ trợ render danh sách file dành riêng cho lệnh đồng bộ Bot
-  function renderFileList(files) {
-    if (Array.isArray(files)) {
-      dbFiles = files;
-      if (typeof getCurrentFolderItems === "function" && typeof renderFiles === "function") {
-        renderFiles(getCurrentFolderItems());
-      }
     }
   }
 
@@ -160,7 +141,7 @@
       <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700/60 space-y-2">
         <div class="flex justify-between text-xs font-semibold">
           <span class="text-slate-300">📊 Dung lượng đã sử dụng:</span>
-          <span id="storageUsageText" class="text-indigo-400 font-bold storage-info-text">0 MB / 100 GB (0%)</span>
+          <span id="storageUsageText" class="text-indigo-400 font-bold">0 MB / 100 GB (0%)</span>
         </div>
         <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700">
           <div id="storageProgressBar" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full w-0 transition-all duration-300"></div>
