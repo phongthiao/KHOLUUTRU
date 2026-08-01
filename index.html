@@ -9,8 +9,8 @@
 <body class="bg-slate-900 text-slate-100 min-h-screen p-4 sm:p-6 font-sans">
   <!-- ĐOẠN MÃ TỰ ĐỘNG ĐỒNG BỘ DỮ LIỆU TỪ BOT VỀ TRANG WEB -->
 <script>
-  // Link Web App Google Apps Script của bạn
-  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwbyPf3T_Naig10fte1qqA_Xpo3TMfAstx0M1J4spGbbI-oPNCcdfhJdYwYJZowvPtAhA/exec";
+  // Link Web App Google Apps Script MỚI NHẤT của bạn
+  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwhGJTzJopZx97uGQFFkNBOUioqC6dSOihwJJGabGhimb2noNz9xJv8P3VlQW1UL2QL/exec";
 
   // Hàm tự động kéo bản sao lưu mới nhất từ Bot về Web HTML
   async function syncStorageDataFromBot() {
@@ -22,14 +22,24 @@
         console.log("Đã cập nhật bản sao lưu mới nhất từ Bot:", data);
 
         // 1. Cập nhật chữ hiển thị dung lượng trên Web
-        const storageTextElem = document.querySelector(".storage-info-text") || document.getElementById("storage-usage");
+        const storageTextElem = document.querySelector(".storage-info-text") || document.getElementById("storageUsageText");
         if (storageTextElem) {
-          storageTextElem.innerText = `${data.total_used_formatted} / 100 GB (${data.usage_percentage})`;
+          storageTextElem.innerText = `${data.total_used_formatted || '0 MB'} / 100 GB (${data.usage_percentage || '0%'})`;
         }
 
-        // 2. Nếu trang web của bạn có hàm renderFileList, tự động vẽ lại danh sách file mới
+        // Cập nhật thanh tiến trình dung lượng (nếu có)
+        const storageBarElem = document.getElementById("storageProgressBar");
+        if (storageBarElem && data.usage_percentage) {
+          storageBarElem.style.width = data.usage_percentage;
+        }
+
+        // 2. Nếu trang web của bạn có hàm renderFileList hoặc renderFiles, tự động vẽ lại danh sách file mới
         if (typeof renderFileList === "function") {
           renderFileList(data.files);
+        } else if (typeof renderFiles === "function" && Array.isArray(data.files)) {
+          // Kết hợp danh sách file từ Bot vào dữ liệu hiện tại
+          dbFiles = data.files;
+          renderFiles(getCurrentFolderItems());
         }
       }
     } catch (err) {
@@ -141,7 +151,7 @@
       <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700/60 space-y-2">
         <div class="flex justify-between text-xs font-semibold">
           <span class="text-slate-300">📊 Dung lượng đã sử dụng:</span>
-          <span id="storageUsageText" class="text-indigo-400 font-bold">0 MB / 100 GB (0%)</span>
+          <span id="storageUsageText" class="text-indigo-400 font-bold storage-info-text">0 MB / 100 GB (0%)</span>
         </div>
         <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700">
           <div id="storageProgressBar" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full w-0 transition-all duration-300"></div>
@@ -216,6 +226,7 @@
           </button>
         </div>
 
+        <!-- Đã xóa bộ lọc phân loại, chỉ giữ lại ô Tìm kiếm -->
         <div class="flex items-center gap-2 w-full md:w-auto">
           <input type="text" id="searchInput" oninput="filterFiles()" placeholder="🔍 Tìm tên tệp..." class="bg-slate-900 border border-slate-700 text-xs px-3 py-2 rounded-xl outline-none focus:border-indigo-500 w-full sm:w-64">
         </div>
@@ -281,12 +292,10 @@
 
   <script>
     const DATA_CLOUD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7iLGeDWa7Yarmlwyt51YQkyvTAFQYO591BxiFnGR_QFCAqIP-OSUH_mzEZcZZOQ_9EJX-5sXKjOCd/pub?output=csv";
-    const BACKUP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbyPf3T_Naig10fte1qqA_Xpo3TMfAstx0M1J4spGbbI-oPNCcdfhJdYwYJZowvPtAhA/exec";
+    const BACKUP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKV7VT5N-hY8OAw8trsM974yqGOcbbNtBQn90mlWqBt8nW8lLFhJXi9rlcmQ1UtdMe8A/exec";
 
     let CURRENT_MTB = localStorage.getItem('cur_mtb') || null;
-    
-    // Đã bảo mật: Không chứa token cố định trong mã
-    let BOT_TOKEN = localStorage.getItem('cur_token') || "";
+    let BOT_TOKEN = localStorage.getItem('cur_token') || null;
     let CHAT_ID = localStorage.getItem('cur_chatid') || null;
 
     const MAX_STORAGE_BYTES = 100 * 1024 * 1024 * 1024; 
@@ -372,6 +381,7 @@
       document.getElementById('warningModal').classList.add('hidden');
     }
 
+    // CHỨC NĂNG MỞ CHAT VỚI BOT TELEGRAM TỰ ĐỘNG
     async function openTelegramBot() {
       if (!BOT_TOKEN) return alert("Vui lòng đăng nhập trước!");
       
@@ -943,6 +953,7 @@
       }
     }
 
+    // CHỨC NĂNG LỌC FILE DỰA TRÊN TỪ KHÓA TÌM KIẾM
     function filterFiles() {
       const search = document.getElementById('searchInput').value.toLowerCase();
       const currentItems = getCurrentFolderItems();
