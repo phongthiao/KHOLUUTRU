@@ -7,49 +7,84 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen p-4 sm:p-6 font-sans">
+  <!-- ĐOẠN MÃ TỰ ĐỘNG ĐỒNG BỘ DỮ LIỆU TỪ BOT VỀ TRANG WEB -->
+<script>
+  // Link Web App Google Apps Script MỚI NHẤT của bạn
+  const GAS_API_URL = "https://script.google.com/macros/s/AKfycby8s0bjvHM9UJBK0gbM2m5lT5EU8EQLDNt4GM4Rc2Q8cYS6D_lWBOo_-aCEBvN7gSj99A/exec";
 
-  <!-- ĐOẠN MÃ TỰ ĐỘNG ĐỒNG BỘ DỮ LIỆU TỪ BOT VỀ TRANG WEB (ĐÃ SỬA CHỐNG SPAM) -->
-  <script>
-    // Link Web App Google Apps Script
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxtSSr5VOuMdZ1c2B3RTsmpFPcVJQUKGvr9K_MGksHP3MbdstKlO3Sah_73eMq-DMOhwg/exec";
+  // Hàm tự động kéo bản sao lưu mới nhất từ Bot về Web HTML
+  async function syncStorageDataFromBot() {
+    try {
+      const response = await fetch(GAS_API_URL);
+      const data = await response.json();
 
-    // Hàm tự động kéo dữ liệu dung lượng & danh sách file ngầm (GET request)
-    async function syncStorageDataFromBot() {
-      try {
-        const response = await fetch(GAS_API_URL + "?t=" + Date.now());
-        const data = await response.json();
+      if (data.status === "success") {
+        console.log("Đã cập nhật bản sao lưu mới nhất từ Bot:", data);
 
-        if (data && data.status === "success") {
-          // 1. Cập nhật thanh dung lượng
-          const storageTextElem = document.getElementById("storageUsageText");
-          const progressBar = document.getElementById("storageProgressBar");
+        // 1. Cập nhật chữ hiển thị dung lượng trên Web
+        const storageTextElem = document.querySelector(".storage-info-text") || document.getElementById("storageUsageText") || document.getElementById("storage-usage");
+        if (storageTextElem) {
+          storageTextElem.innerText = `${data.total_used_formatted} / 100 GB (${data.usage_percentage})`;
+        }
 
-          if (storageTextElem && data.total_used_formatted) {
-            storageTextElem.innerText = `${data.total_used_formatted} / 100 GB (${data.usage_percentage})`;
-          }
-          if (progressBar && data.usage_percentage) {
-            progressBar.style.width = data.usage_percentage;
-          }
+        // Cập nhật thanh tiến trình dung lượng
+        const storageProgressBar = document.getElementById("storageProgressBar");
+        if (storageProgressBar && data.usage_percentage) {
+          storageProgressBar.style.width = data.usage_percentage;
+        }
 
-          // 2. Cập nhật dữ liệu file nếu hệ thống có dữ liệu file hợp lệ
+        // 2. Nếu trang web của bạn có hàm renderFileList hoặc renderFiles, tự động vẽ lại danh sách file mới
+        if (typeof renderFileList === "function") {
+          renderFileList(data.files);
+        } else if (typeof renderFiles === "function" && typeof getCurrentFolderItems === "function") {
           if (Array.isArray(data.files) && data.files.length > 0) {
-            dbFiles = data.files;
-            if (typeof renderFiles === "function" && typeof getCurrentFolderItems === "function") {
-              renderFiles(getCurrentFolderItems());
-            }
+            window.dbFiles = data.files;
+            renderFiles(getCurrentFolderItems());
           }
         }
-      } catch (err) {
-        console.error("Lỗi đồng bộ ngầm dữ liệu:", err);
       }
+    } catch (err) {
+      console.error("Lỗi kết nối đồng bộ:", err);
     }
+  }
 
-    // Chạy tự động khi tải trang và lặp lại kiểm tra ngầm mỗi 15 giây
-    window.addEventListener("DOMContentLoaded", () => {
-      syncStorageDataFromBot();
-      setInterval(syncStorageDataFromBot, 15000); 
-    });
-  </script>
+  // BỔ SUNG: Hàm gửi thông báo dung lượng & thông tin tải file lên Telegram Bot
+  async function notifyBotUploadStatus(fileName, fileSize, status, extraMessage = "") {
+    if (typeof BOT_TOKEN === 'undefined' || typeof CHAT_ID === 'undefined' || !BOT_TOKEN || !CHAT_ID) return;
+    
+    const totalBytes = (typeof dbFiles !== 'undefined') ? dbFiles.reduce((sum, item) => sum + (item.size || 0), 0) : 0;
+    const formattedUsed = typeof formatBytes === 'function' ? formatBytes(totalBytes) : totalBytes + ' Bytes';
+    const usedPercentage = (Math.min(100, ((totalBytes / (100 * 1024 * 1024 * 1024)) * 100))).toFixed(1);
+
+    const message = `🔔 **THÔNG BÁO TỪ KHO DỮ LIỆU**\n` +
+                    `--------------------------------\n` +
+                    `📁 **Tệp:** ${fileName}\n` +
+                    `📏 **Kích thước:** ${typeof formatBytes === 'function' ? formatBytes(fileSize) : fileSize}\n` +
+                    `📌 **Trạng thái:** ${status}\n` +
+                    `📊 **Tổng dung lượng đã dùng:** ${formattedUsed} / 100 GB (${usedPercentage}%)\n` +
+                    (extraMessage ? `📝 **Ghi chú:** ${extraMessage}` : '');
+
+    try {
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: CHAT_ID,
+          text: message,
+          parse_mode: 'Markdown'
+        })
+      });
+    } catch (e) {
+      console.error("Không thể gửi thông báo tới Bot:", e);
+    }
+  }
+
+  // Chạy tự động khi tải trang và lặp lại kiểm tra mỗi 10 giây
+  window.addEventListener("DOMContentLoaded", () => {
+    syncStorageDataFromBot();
+    setInterval(syncStorageDataFromBot, 10000); 
+  });
+</script>
 
   <!-- MÀN HÌNH ĐĂNG NHẬP -->
   <div id="loginScreen" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md flex items-center justify-center z-50 p-4">
@@ -148,7 +183,7 @@
       <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700/60 space-y-2">
         <div class="flex justify-between text-xs font-semibold">
           <span class="text-slate-300">📊 Dung lượng đã sử dụng:</span>
-          <span id="storageUsageText" class="text-indigo-400 font-bold">0 MB / 100 GB (0%)</span>
+          <span id="storageUsageText" class="text-indigo-400 font-bold storage-info-text">0 MB / 100 GB (0%)</span>
         </div>
         <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700">
           <div id="storageProgressBar" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full w-0 transition-all duration-300"></div>
@@ -223,6 +258,7 @@
           </button>
         </div>
 
+        <!-- Đã xóa bộ lọc phân loại, chỉ giữ lại ô Tìm kiếm -->
         <div class="flex items-center gap-2 w-full md:w-auto">
           <input type="text" id="searchInput" oninput="filterFiles()" placeholder="🔍 Tìm tên tệp..." class="bg-slate-900 border border-slate-700 text-xs px-3 py-2 rounded-xl outline-none focus:border-indigo-500 w-full sm:w-64">
         </div>
@@ -287,11 +323,8 @@
   </div>
 
   <script>
-    // CSV Xác thực Đăng nhập Cloud
     const DATA_CLOUD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7iLGeDWa7Yarmlwyt51YQkyvTAFQYO591BxiFnGR_QFCAqIP-OSUH_mzEZcZZOQ_9EJX-5sXKjOCd/pub?output=csv";
-    
-    // Script Quản lý Sao lưu Google Sheet
-    const BACKUP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyP9Z_k9abNy8w3Rf2Ovigl4uhuxWVnCZQPYQTrH4fBE4WdR0qEZVKdv7B-F53BVLmmrg/exec";
+    const BACKUP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKV7VT5N-hY8OAw8trsM974yqGOcbbNtBQn90mlWqBt8nW8lLFhJXi9rlcmQ1UtdMe8A/exec";
 
     let CURRENT_MTB = localStorage.getItem('cur_mtb') || null;
     let BOT_TOKEN = localStorage.getItem('cur_token') || null;
@@ -380,6 +413,7 @@
       document.getElementById('warningModal').classList.add('hidden');
     }
 
+    // CHỨC NĂNG MỞ CHAT VỚI BOT TELEGRAM TỰ ĐỘNG
     async function openTelegramBot() {
       if (!BOT_TOKEN) return alert("Vui lòng đăng nhập trước!");
       
@@ -543,7 +577,18 @@
         queueCountText.innerText = `Đang xử lý: ${i + 1}/${files.length}`;
         
         const uploaded = await uploadSingleBigFileWithProgress(file, statusText, progressBar, percentText, i + 1, files.length);
-        if (uploaded) successCount++;
+        if (uploaded) {
+          successCount++;
+          // Gửi thông báo tải thành công tới Bot
+          if (typeof notifyBotUploadStatus === 'function') {
+            await notifyBotUploadStatus(file.name, file.size, "✅ Tải lên thành công");
+          }
+        } else {
+          // Gửi thông báo tải thất bại tới Bot
+          if (typeof notifyBotUploadStatus === 'function') {
+            await notifyBotUploadStatus(file.name, file.size, "❌ Tải lên thất bại");
+          }
+        }
 
         await new Promise(r => setTimeout(r, 1000)); 
       }
@@ -951,6 +996,7 @@
       }
     }
 
+    // CHỨC NĂNG LỌC FILE DỰA TRÊN TỪ KHÓA TÌM KIẾM
     function filterFiles() {
       const search = document.getElementById('searchInput').value.toLowerCase();
       const currentItems = getCurrentFolderItems();
