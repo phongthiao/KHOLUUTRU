@@ -9,8 +9,8 @@
 <body class="bg-slate-900 text-slate-100 min-h-screen p-4 sm:p-6 font-sans">
   <!-- ĐOẠN MÃ TỰ ĐỘNG ĐỒNG BỘ DỮ LIỆU TỪ BOT VỀ TRANG WEB -->
 <script>
-  // Link Web App Google Apps Script MỚI NHẤT để sao lưu & lấy dữ liệu
-  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyP9Z_k9abNy8w3Rf2Ovigl4uhuxWVnCZQPYQTrH4fBE4WdR0qEZVKdv7B-F53BVLmmrg/exec";
+  // Link Web App Google Apps Script MỚI ĐÃ KÍCH HOẠT WEBHOOK
+  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxtSSr5VOuMdZ1c2B3RTsmpFPcVJQUKGvr9K_MGksHP3MbdstKlO3Sah_73eMq-DMOhwg/exec";
 
   // Hàm tự động kéo bản sao lưu mới nhất từ Bot về Web HTML
   async function syncStorageDataFromBot() {
@@ -280,8 +280,10 @@
   </div>
 
   <script>
-    // Đã thay đổi link CSV và App Script chuẩn mới
+    // CSV Xác thực Đăng nhập Cloud
     const DATA_CLOUD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7iLGeDWa7Yarmlwyt51YQkyvTAFQYO591BxiFnGR_QFCAqIP-OSUH_mzEZcZZOQ_9EJX-5sXKjOCd/pub?output=csv";
+    
+    // Script Quản lý Sao lưu Google Sheet (Giữ nguyên link cũ để giữ toàn bộ lịch sử sao lưu)
     const BACKUP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyP9Z_k9abNy8w3Rf2Ovigl4uhuxWVnCZQPYQTrH4fBE4WdR0qEZVKdv7B-F53BVLmmrg/exec";
 
     let CURRENT_MTB = localStorage.getItem('cur_mtb') || null;
