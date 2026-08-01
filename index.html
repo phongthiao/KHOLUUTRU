@@ -7,35 +7,42 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen p-4 sm:p-6 font-sans">
+  <!-- ĐOẠN MÃ TỰ ĐỘNG ĐỒNG BỘ DỮ LIỆU TỪ BOT VỀ TRANG WEB -->
+<script>
+  // Link Web App Google Apps Script MỚI NHẤT của bạn
+  const GAS_API_URL = "https://script.google.com/macros/s/AKfycby8s0bjvHM9UJBK0gbM2m5lT5EU8EQLDNt4GM4Rc2Q8cYS6D_lWBOo_-aCEBvN7gSj99A/exec";
 
-  <!-- TỰ ĐỘNG ĐỒNG BỘ DỮ LIỆU TỪ BOT VỀ TRANG WEB -->
-  <script>
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycby8s0bjvHM9UJBK0gbM2m5lT5EU8EQLDNt4GM4Rc2Q8cYS6D_lWBOo_-aCEBvN7gSj99A/exec";
+  // Hàm tự động kéo bản sao lưu mới nhất từ Bot về Web HTML
+  async function syncStorageDataFromBot() {
+    try {
+      const response = await fetch(GAS_API_URL);
+      const data = await response.json();
 
-    async function syncStorageDataFromBot() {
-      try {
-        const response = await fetch(GAS_API_URL);
-        const data = await response.json();
+      if (data.status === "success") {
+        console.log("Đã cập nhật bản sao lưu mới nhất từ Bot:", data);
 
-        if (data.status === "success") {
-          const storageTextElem = document.getElementById("storageUsageText");
-          if (storageTextElem) {
-            storageTextElem.innerText = `${data.total_used_formatted} / 100 GB (${data.usage_percentage})`;
-          }
-          if (typeof renderFileList === "function" && data.files) {
-            renderFileList(data.files);
-          }
+        // 1. Cập nhật chữ hiển thị dung lượng trên Web
+        const storageTextElem = document.querySelector(".storage-info-text") || document.getElementById("storage-usage");
+        if (storageTextElem) {
+          storageTextElem.innerText = `${data.total_used_formatted} / 100 GB (${data.usage_percentage})`;
         }
-      } catch (err) {
-        console.error("Lỗi kết nối đồng bộ:", err);
-      }
-    }
 
-    window.addEventListener("DOMContentLoaded", () => {
-      syncStorageDataFromBot();
-      setInterval(syncStorageDataFromBot, 10000); 
-    });
-  </script>
+        // 2. Nếu trang web của bạn có hàm renderFileList, tự động vẽ lại danh sách file mới
+        if (typeof renderFileList === "function") {
+          renderFileList(data.files);
+        }
+      }
+    } catch (err) {
+      console.error("Lỗi kết nối đồng bộ:", err);
+    }
+  }
+
+  // Chạy tự động khi tải trang và lặp lại kiểm tra mỗi 10 giây
+  window.addEventListener("DOMContentLoaded", () => {
+    syncStorageDataFromBot();
+    setInterval(syncStorageDataFromBot, 10000); 
+  });
+</script>
 
   <!-- MÀN HÌNH ĐĂNG NHẬP -->
   <div id="loginScreen" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md flex items-center justify-center z-50 p-4">
@@ -61,6 +68,7 @@
         <span>🔑 Xác Thực Đăng Nhập</span>
       </button>
 
+      <!-- Liên kết Zalo hỗ trợ bảo mật số điện thoại -->
       <a href="https://zalo.me/0799457172" target="_blank" class="w-full bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-300 border border-cyan-500/30 font-semibold py-2.5 rounded-xl transition flex justify-center items-center gap-2 text-xs">
         💬 Liên Hệ Quản Trị Viên
       </a>
@@ -75,16 +83,17 @@
       <div class="text-center space-y-2">
         <div class="text-4xl">⚠️</div>
         <h3 class="text-lg font-bold text-amber-400 uppercase tracking-wide">Cảnh Báo Về An Toàn Tài Khoản</h3>
-        <p class="text-xs text-slate-400">Vui lòng đọc kỹ trước khi bắt đầu sử dụng.</p>
+        <p class="text-xs text-slate-400">Vui lòng đọc kỹ trước khi bắt đầu sử dụng để tránh bị hệ thống quét và khóa vĩnh viễn.</p>
       </div>
 
       <div class="bg-slate-900/80 border border-slate-700/80 rounded-xl p-4 text-xs text-slate-300 space-y-2.5 leading-relaxed max-h-64 overflow-y-auto">
         <p class="font-bold text-rose-400">🛑 CÁC QUY ĐỊNH BẮT BUỘC tuân thủ:</p>
         <ul class="list-disc pl-4 space-y-1.5 text-slate-300">
-          <li><strong>Giới hạn dung lượng:</strong> Hỗ trợ tải lên mỗi file lẻ tối đa <strong>20 MB</strong> trực tiếp trên Web.</li>
-          <li><strong>Tải file lớn hơn:</strong> Dùng Bot Telegram <strong>Kho lưu trữ 100gb (@my_cloud_storage_100gb_bot)</strong> cho file &gt;= 20MB.</li>
+          <li><strong>Giới hạn dung lượng:</strong> Hỗ trợ tải lên mỗi file lẻ tối đa <strong>20 MB</strong>.</li>
           <li><strong>Không dùng chung:</strong> Tuyệt đối không chia sẻ tài khoản cho nhiều người dùng cùng lúc.</li>
-          <li><strong>Cấm nội dung vi phạm:</strong> Không tải lên hoặc lưu trữ nội dung vi phạm bản quyền, độc hại.</li>
+          <li><strong>Cấm nội dung vi phạm:</strong> Không tải lên hoặc lưu trữ nội dung vi phạm bản quyền, phim/ảnh đồi trụy, độc hại.</li>
+          <li><strong>Cấm file phần mềm độc hại:</strong> Không lưu trữ virus, mã độc, phần mềm gián điệp hay công cụ tấn công mạng.</li>
+          <li><strong>Tải lên hợp lý:</strong> Tránh thao tác liên tục hàng loạt quá nhanh để tránh bị hệ thống quét bất thường.</li>
         </ul>
       </div>
 
@@ -108,9 +117,14 @@
         <div class="flex flex-wrap items-center gap-2">
           <span id="userInfoBadge" class="text-xs bg-indigo-500/20 text-indigo-300 px-3 py-2 rounded-xl border border-indigo-500/30 font-mono">Thiết bị: ...</span>
 
-          <!-- NÚT ĐẪ NỐI TRỰC TIẾP TỚI BOT TELEGRAM 100GB -->
-          <button onclick="openHeavyStorageBot()" class="text-xs bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/30 px-3 py-2 rounded-xl transition font-semibold flex items-center gap-1">
-            📦 Tải File Nặng &gt;= 20MB
+          <!-- Công cụ nén file PDF & Video -->
+          <a href="congcu.html" class="text-xs bg-teal-600/20 hover:bg-teal-600/40 text-teal-300 border border-teal-500/30 px-3 py-2 rounded-xl transition font-semibold flex items-center gap-1">
+            🛠️ Công Cụ Nén PDF & Video
+          </a>
+
+          <!-- Xem Kho Ảnh (Liên kết Bot Telegram) -->
+          <button onclick="openTelegramBot()" class="text-xs bg-sky-600/20 hover:bg-sky-600/40 text-sky-300 border border-sky-500/30 px-3 py-2 rounded-xl transition font-semibold flex items-center gap-1">
+            🖼️ Xem Kho Ảnh
           </button>
 
           <button onclick="openBackupHistoryModal()" class="text-xs bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/30 px-3 py-2 rounded-xl transition font-semibold flex items-center gap-1">
@@ -192,14 +206,17 @@
             📂 Danh Sách Nội Dung 
             <span id="fileCountBadge" class="text-xs bg-slate-700 text-indigo-300 px-2 py-0.5 rounded-full">0</span>
           </h2>
+          <!-- Nút Tải Hàng Loạt Các Mục Đã Chọn -->
           <button onclick="downloadSelectedItems()" class="bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/30 text-xs px-3 py-1.5 rounded-xl font-semibold transition hidden" id="downloadSelectedBtn">
             📥 Tải Các Mục Đã Chọn
           </button>
+          <!-- Nút Xóa Hàng Loạt Các Mục Đã Chọn -->
           <button onclick="deleteSelectedItems()" class="bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 text-xs px-3 py-1.5 rounded-xl font-semibold transition hidden" id="deleteSelectedBtn">
             🗑️ Xóa Các Mục Đã Chọn
           </button>
         </div>
 
+        <!-- Đã xóa bộ lọc phân loại, chỉ giữ lại ô Tìm kiếm -->
         <div class="flex items-center gap-2 w-full md:w-auto">
           <input type="text" id="searchInput" oninput="filterFiles()" placeholder="🔍 Tìm tên tệp..." class="bg-slate-900 border border-slate-700 text-xs px-3 py-2 rounded-xl outline-none focus:border-indigo-500 w-full sm:w-64">
         </div>
@@ -264,10 +281,8 @@
   </div>
 
   <script>
-    // GIỮ NGUYÊN CẤU TRÚC CSV ĐĂNG NHẬP & LINK SAO LƯU DỰA TRÊN FILE CỦA BẠN
     const DATA_CLOUD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7iLGeDWa7Yarmlwyt51YQkyvTAFQYO591BxiFnGR_QFCAqIP-OSUH_mzEZcZZOQ_9EJX-5sXKjOCd/pub?output=csv";
     const BACKUP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKV7VT5N-hY8OAw8trsM974yqGOcbbNtBQn90mlWqBt8nW8lLFhJXi9rlcmQ1UtdMe8A/exec";
-    const BOT_HEAVY_STORAGE_LINK = "https://t.me/my_cloud_storage_100gb_bot";
 
     let CURRENT_MTB = localStorage.getItem('cur_mtb') || null;
     let BOT_TOKEN = localStorage.getItem('cur_token') || null;
@@ -291,10 +306,6 @@
         await autoFetchLatestBackupOnStart();
       }
     };
-
-    function openHeavyStorageBot() {
-      window.open(BOT_HEAVY_STORAGE_LINK, '_blank');
-    }
 
     async function loginWithCloud() {
       const mtb = document.getElementById('inputMTB').value.trim().toUpperCase();
@@ -360,6 +371,24 @@
       document.getElementById('warningModal').classList.add('hidden');
     }
 
+    // CHỨC NĂNG MỞ CHAT VỚI BOT TELEGRAM TỰ ĐỘNG
+    async function openTelegramBot() {
+      if (!BOT_TOKEN) return alert("Vui lòng đăng nhập trước!");
+      
+      try {
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getMe`);
+        const data = await res.json();
+        
+        if (data.ok && data.result.username) {
+          window.open(`https://t.me/${data.result.username}`, '_blank');
+        } else {
+          alert("❌ Không tìm thấy thông tin Bot Telegram!");
+        }
+      } catch (e) {
+        alert("❌ Lỗi khi lấy thông tin Bot Telegram!");
+      }
+    }
+
     async function autoFetchLatestBackupOnStart() {
       try {
         const res = await fetch(BACKUP_SCRIPT_URL + '?t=' + Date.now());
@@ -367,7 +396,6 @@
 
         if (listData && listData.length > 0) {
           const latestItem = listData[listData.length - 1];
-          // Kích hoạt nối chuỗi dữ liệu đầy đủ của bản trước
           const fullJsonData = (latestItem.mainData || "") + (latestItem.subData || "");
           
           if (fullJsonData) {
@@ -412,7 +440,6 @@
       } catch (e) {}
     }
 
-    // TỰ ĐỘNG ĐỒNG BỘ NỐI FILE ĐẦY ĐỦ CHO TRANG WEB KHI SAO LƯU
     async function autoTriggerAllBackups() {
       await autoSaveMainDatabase();
       await autoExportBackupToCloud();
@@ -474,7 +501,7 @@
 
       const oversizedFiles = files.filter(f => f.size > MAX_SINGLE_FILE_BYTES);
       if (oversizedFiles.length > 0) {
-        alert(`❌ Có ${oversizedFiles.length} tệp vượt quá giới hạn 20 MB! Vui lòng ấn "Tải File Nặng >= 20MB" để gửi qua Bot.`);
+        alert(`❌ Có ${oversizedFiles.length} tệp vượt quá giới hạn 20 MB! Vui lòng chọn tệp nhỏ hơn 20 MB.`);
         return;
       }
 
@@ -824,7 +851,7 @@
                 ? `<button onclick="openFolder('${item.id}')" class="bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-semibold">📂 Mở</button>`
                 : `
                   <button onclick="previewFile('${item.id}', '${escapeQuotes(item.name)}')" class="bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 px-2.5 py-1.5 rounded-xl text-xs font-semibold">👁️ Xem</button>
-                  <button onclick="downloadFile('${item.id}', '${escapeQuotes(item.name)}')" class="bg-emerald-600/20 hover:bg-emerald-500/40 text-emerald-300 border border-emerald-500/30 px-2.5 py-1.5 rounded-xl text-xs font-semibold">⬇️ Tải</button>
+                  <button onclick="downloadFile('${item.id}', '${escapeQuotes(item.name)}')" class="bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/30 px-2.5 py-1.5 rounded-xl text-xs font-semibold">⬇️ Tải</button>
                 `}
               <button onclick="deleteSingleItem('${item.id}')" class="bg-rose-600/20 hover:bg-rose-600/40 text-rose-300 border border-rose-500/30 px-2.5 py-1.5 rounded-xl text-xs font-semibold">🗑️ Xóa</button>
             </td>
@@ -916,6 +943,7 @@
       }
     }
 
+    // CHỨC NĂNG LỌC FILE DỰA TRÊN TỪ KHÓA TÌM KIẾM
     function filterFiles() {
       const search = document.getElementById('searchInput').value.toLowerCase();
       const currentItems = getCurrentFolderItems();
