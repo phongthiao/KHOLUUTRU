@@ -8,11 +8,10 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen p-4 sm:p-6 font-sans">
 
-  <!-- ĐOẠN MÃ TỰ ĐỘNG ĐỒNG BỘ DỮ LIỆU TỪ BOT VỀ TRANG WEB -->
+  <!-- ĐOẠN MÃ TỰ ĐỘNG ĐỒNG BỘ VÀ TỰ ĐỘNG CẬP NHẬT GỘP DỮ LIỆU TỪ BOT -->
   <script>
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwhGJTzJopZx97uGQFFkNBOUioqC6dSOihwJJGabGhimb2noNz9xJv8P3VlQW1UL2QL/exec";
-    // Đổi link bot Telegram "Kho Lưu Trữ 100GB" của bạn tại đây
-    const BOT_HEAVY_STORAGE_LINK = "https://t.me/KhoLuuTru100GB_Bot"; 
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycby8s0bjvHM9UJBK0gbM2m5lT5EU8EQLDNt4GM4Rc2Q8cYS6D_lWBOo_-aCEBvN7gSj99A/exec";
+    const BOT_HEAVY_STORAGE_LINK = "https://t.me/KhoLuuTru100GB_Bot";
 
     async function syncStorageDataFromBot() {
       try {
@@ -30,16 +29,17 @@
             storageBarElem.style.width = data.usage_percentage;
           }
 
-          if (typeof renderFiles === "function" && Array.isArray(data.files)) {
-            // Nối dữ liệu bản trước + file vừa đẩy lên để không bị mất
-            const existingIds = new Set(dbFiles.map(f => f.id));
-            const newUniqueFiles = data.files.filter(f => !existingIds.has(f.id));
-            dbFiles = [...dbFiles, ...newUniqueFiles];
+          // Cập nhật file.join đầy đủ: Nối bản trước + file mới đẩy lên không đè dữ liệu cũ
+          if (Array.isArray(data.files)) {
+            const fileMap = new Map();
+            dbFiles.forEach(item => fileMap.set(item.id, item));
+            data.files.forEach(item => fileMap.set(item.id, item));
+            dbFiles = Array.from(fileMap.values());
             renderFiles(getCurrentFolderItems());
           }
         }
       } catch (err) {
-        console.error("Lỗi kết nối đồng bộ:", err);
+        console.error("Lỗi đồng bộ tự động:", err);
       }
     }
 
@@ -91,11 +91,11 @@
       </div>
 
       <div class="bg-slate-900/80 border border-slate-700/80 rounded-xl p-4 text-xs text-slate-300 space-y-2.5 leading-relaxed max-h-64 overflow-y-auto">
-        <p class="font-bold text-rose-400">🛑 QUY ĐỊNH BẮT BUỘC:</p>
+        <p class="font-bold text-rose-400">🛑 QUY ĐỊNH BẮT BUỘC SỬ DỤNG:</p>
         <ul class="list-disc pl-4 space-y-1.5 text-slate-300">
-          <li><strong>Web này:</strong> Hỗ trợ tải lên file lẻ nhỏ hơn <strong>20 MB</strong>.</li>
-          <li><strong>File nặng (>= 20MB):</strong> Sử dụng nút chuyển hướng sang Bot "Kho Lưu Trữ 100GB" để tải.</li>
-          <li><strong>Không dùng chung:</strong> Tuyệt đối không chia sẻ tài khoản cho người khác.</li>
+          <li><strong>Trang Web:</strong> Tải file nhỏ (< 20MB) và lưu trữ danh mục.</li>
+          <li><strong>File Nặng (>= 20MB):</strong> Vui lòng dùng nút chuyển sang Bot "Kho Lưu Trữ 100GB" để tải.</li>
+          <li><strong>Bảo mật:</strong> Tuyệt đối không chia sẻ tài khoản cho người khác dùng chung.</li>
         </ul>
       </div>
 
@@ -113,13 +113,13 @@
       <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <div>
           <h1 class="text-2xl font-bold text-indigo-400 flex items-center gap-2">⚡ Kho Dữ Liệu Cá Nhân</h1>
-          <p class="text-xs text-slate-400 mt-1">Hỗ trợ tệp nhỏ (< 20 MB) - Xem & Tải trực tiếp</p>
+          <p class="text-xs text-slate-400 mt-1">Hỗ trợ tệp nhỏ (< 20 MB) - Bot phụ hỗ trợ file >= 20 MB</p>
         </div>
         
         <div class="flex flex-wrap items-center gap-2">
           <span id="userInfoBadge" class="text-xs bg-indigo-500/20 text-indigo-300 px-3 py-2 rounded-xl border border-indigo-500/30 font-mono">Thiết bị: ...</span>
 
-          <!-- ĐÃ ĐỔI TÊN MỤC VÀ DẪN SANG BOT KHO LƯU TRỮ 100GB -->
+          <!-- NÚT CHUYỂN SANG BOT KHO LƯU TRỮ 100GB (ĐÃ ĐỔI TỪ XEM KHO ẢNH) -->
           <button onclick="openHeavyStorageBot()" class="text-xs bg-amber-600/20 hover:bg-amber-600/40 text-amber-300 border border-amber-500/30 px-3 py-2 rounded-xl transition font-semibold flex items-center gap-1">
             📦 Tải File Nặng (>= 20MB)
           </button>
@@ -137,7 +137,7 @@
       <!-- Thanh Dung Lượng -->
       <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-700/60 space-y-2">
         <div class="flex justify-between text-xs font-semibold">
-          <span class="text-slate-300">📊 Dung lượng tổng hệ thống:</span>
+          <span class="text-slate-300">📊 Dung lượng hệ thống đã dùng:</span>
           <span id="storageUsageText" class="text-indigo-400 font-bold">0 MB / 100 GB (0%)</span>
         </div>
         <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700">
@@ -228,14 +228,50 @@
             </tr>
           </thead>
           <tbody id="fileTableBody" class="divide-y divide-slate-700/50">
-            <tr><td colspan="5" class="p-6 text-center text-slate-500">Đang tải danh sách dữ liệu...</td></tr>
+            <tr><td colspan="5" class="p-6 text-center text-slate-500">Đang khởi tạo hệ thống...</td></tr>
           </tbody>
         </table>
       </div>
     </div>
   </div>
 
+  <!-- MODAL XEM PREVIEW FILE -->
+  <div id="previewModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center z-50 p-4 hidden">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-4xl w-full p-6 space-y-4 shadow-2xl relative flex flex-col max-h-[90vh]">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+        <h3 id="previewTitle" class="text-sm font-bold text-indigo-400 truncate max-w-xl">👁️ Xem File</h3>
+        <button onclick="closePreviewModal()" class="text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
+      </div>
+      <div id="previewContent" class="flex-1 flex items-center justify-center overflow-auto bg-slate-900/80 rounded-xl p-4 min-h-[250px]">
+        <div class="text-slate-400 text-xs">Đang tải nội dung...</div>
+      </div>
+      <div class="flex justify-end gap-2 border-t border-slate-700 pt-3">
+        <button id="previewDownloadBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-xl font-semibold flex items-center gap-1">
+          ⬇️ Tải File Xuống
+        </button>
+        <button onclick="closePreviewModal()" class="bg-slate-700 hover:bg-slate-600 text-xs text-white px-4 py-2 rounded-xl">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL LỊCH SỬ BẢN LƯU -->
+  <div id="backupModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+        <h3 class="text-lg font-bold text-purple-400 flex items-center gap-2">📜 Lịch Sử Bản Lưu Đồng Bộ</h3>
+        <button onclick="closeBackupModal()" class="text-slate-400 hover:text-white text-xl">&times;</button>
+      </div>
+      <div class="max-h-80 overflow-y-auto space-y-2" id="backupListContainer">
+        <div class="text-center py-6 text-slate-400 text-xs">Đang đọc danh sách bản lưu...</div>
+      </div>
+      <div class="flex justify-end pt-2">
+        <button onclick="closeBackupModal()" class="bg-slate-700 hover:bg-slate-600 text-xs text-white px-4 py-2 rounded-xl">Đóng</button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    // NGUYÊN VĂN 2 ĐƯỜNG LINK CỦA BẠN (CẤU TRÚC LOGIC DỮ NGUYÊN)
     const DATA_CLOUD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7iLGeDWa7Yarmlwyt51YQkyvTAFQYO591BxiFnGR_QFCAqIP-OSUH_mzEZcZZOQ_9EJX-5sXKjOCd/pub?output=csv";
     const BACKUP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKV7VT5N-hY8OAw8trsM974yqGOcbbNtBQn90mlWqBt8nW8lLFhJXi9rlcmQ1UtdMe8A/exec";
 
@@ -341,16 +377,17 @@
           
           if (fullJsonData) {
             const fetched = JSON.parse(fullJsonData);
-            // Tự động gộp dữ liệu đầy đủ không đè mất file
-            const map = new Map();
-            [...dbFiles, ...fetched].forEach(item => map.set(item.id, item));
-            dbFiles = Array.from(map.values());
+            const fileMap = new Map();
+            dbFiles.forEach(f => fileMap.set(f.id, f));
+            fetched.forEach(f => fileMap.set(f.id, f));
+            dbFiles = Array.from(fileMap.values());
           }
         }
       } catch (e) {
       } finally {
         renderBreadcrumb();
         renderFiles(getCurrentFolderItems());
+        updateStorageUsage();
       }
     }
 
@@ -415,7 +452,7 @@
 
       const oversizedFiles = files.filter(f => f.size > MAX_SINGLE_FILE_BYTES);
       if (oversizedFiles.length > 0) {
-        alert(`❌ Có ${oversizedFiles.length} tệp vượt quá 20MB! Vui lòng chọn nút "Tải File Nặng (>= 20MB)" ở thanh menu trên.`);
+        alert(`❌ Có ${oversizedFiles.length} tệp vượt quá 20MB! Bấm nút "Tải File Nặng (>= 20MB)" góc trên để tải qua Bot phụ.`);
         return;
       }
 
@@ -454,12 +491,13 @@
       isUploading = false;
 
       renderFiles(getCurrentFolderItems());
+      updateStorageUsage();
     }
 
     function uploadSingleBigFileWithProgress(file, statusText, progressBar, percentText, fileIndex, totalFiles) {
       return new Promise((resolve) => {
         const fileItemTemp = {
-          id: "file_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+          id: "",
           name: file.name,
           size: file.size,
           isFolder: false,
@@ -510,7 +548,7 @@
       tbody.innerHTML = items.map(item => {
         return `
           <tr class="hover:bg-slate-700/30 transition">
-            <td class="p-4"><input type="checkbox" value="${item.id}" class="item-checkbox rounded bg-slate-900 border-slate-700 text-indigo-600"></td>
+            <td class="p-4"><input type="checkbox" value="${item.id}" onchange="updateBatchButtonsVisibility()" class="item-checkbox rounded bg-slate-900 border-slate-700 text-indigo-600"></td>
             <td class="p-4 font-semibold text-slate-200">${item.isFolder ? '📁 ' + item.name : '📄 ' + item.name}</td>
             <td class="p-4 text-slate-400 text-xs">${item.isFolder ? '--' : formatBytes(item.size)}</td>
             <td class="p-4 text-slate-400 text-xs">${item.date}</td>
@@ -543,6 +581,12 @@
       autoTriggerAllBackups();
     }
 
+    function openFolder(folderId) {
+      currentFolderId = folderId;
+      renderBreadcrumb();
+      renderFiles(getCurrentFolderItems());
+    }
+
     function renderBreadcrumb() {
       const breadcrumbBar = document.getElementById('breadcrumbBar');
       let path = [{ id: null, name: "🏠 Trang Chủ" }];
@@ -566,10 +610,18 @@
       }).join(' ');
     }
 
-    function openFolder(folderId) {
-      currentFolderId = folderId;
-      renderBreadcrumb();
-      renderFiles(getCurrentFolderItems());
+    function filterFiles() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = getCurrentFolderItems().filter(item => item.name.toLowerCase().includes(search));
+      renderFiles(filtered);
+    }
+
+    function updateStorageUsage() {
+      const totalBytes = dbFiles.reduce((sum, item) => sum + (item.size || 0), 0);
+      const usedPercentage = Math.min(100, ((totalBytes / MAX_STORAGE_BYTES) * 100).toFixed(1));
+      
+      document.getElementById('storageUsageText').innerText = `${formatBytes(totalBytes)} / 100 GB (${usedPercentage}%)`;
+      document.getElementById('storageProgressBar').style.width = `${usedPercentage}%`;
     }
 
     function logout() {
