@@ -10,7 +10,7 @@
   <!-- ĐOẠN MÃ TỰ ĐỘNG ĐỒNG BỘ DỮ LIỆU TỪ BOT VỀ TRANG WEB -->
 <script>
   // Link Web App Google Apps Script MỚI NHẤT của bạn
-  const GAS_API_URL = "https://script.google.com/macros/s/AKfycby8s0bjvHM9UJBK0gbM2m5lT5EU8EQLDNt4GM4Rc2Q8cYS6D_lWBOo_-aCEBvN7gSj99A/exec";
+  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwbyPf3T_Naig10fte1qqA_Xpo3TMfAstx0M1J4spGbbI-oPNCcdfhJdYwYJZowvPtAhA/exec";
 
   // Hàm tự động kéo bản sao lưu mới nhất từ Bot về Web HTML
   async function syncStorageDataFromBot() {
@@ -282,10 +282,14 @@
 
   <script>
     const DATA_CLOUD_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS7iLGeDWa7Yarmlwyt51YQkyvTAFQYO591BxiFnGR_QFCAqIP-OSUH_mzEZcZZOQ_9EJX-5sXKjOCd/pub?output=csv";
-    const BACKUP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwKV7VT5N-hY8OAw8trsM974yqGOcbbNtBQn90mlWqBt8nW8lLFhJXi9rlcmQ1UtdMe8A/exec";
+    
+    // ĐÃ CẬP NHẬT LINK GAS MỚI NHẤT DƯỚI ĐÂY
+    const BACKUP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwbyPf3T_Naig10fte1qqA_Xpo3TMfAstx0M1J4spGbbI-oPNCcdfhJdYwYJZowvPtAhA/exec";
 
     let CURRENT_MTB = localStorage.getItem('cur_mtb') || null;
-    let BOT_TOKEN = localStorage.getItem('cur_token') || null;
+    
+    // ĐÃ CẬP NHẬT TOKEN MỚI DƯỚI ĐÂY
+    let BOT_TOKEN = localStorage.getItem('cur_token') || "8850020825:AAH5eeAZoZC5Nym-7_yA9Bn7eqNbTPtwPoo";
     let CHAT_ID = localStorage.getItem('cur_chatid') || null;
 
     const MAX_STORAGE_BYTES = 100 * 1024 * 1024 * 1024; 
