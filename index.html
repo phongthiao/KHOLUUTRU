@@ -1,238 +1,221 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SmartSun Edu - Azota System</title>
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-
-  <style>
-    :root {
-      --bg-dark: #090d16;
-      --bg-card: #0f172a;
-      --border-color: rgba(255, 255, 255, 0.08);
-      --border-glow: rgba(99, 102, 241, 0.3);
-      --primary: #6366f1;
-      --primary-glow: rgba(99, 102, 241, 0.4);
-      --cyan: #06b6d4;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --radius-lg: 18px;
-      --radius-md: 12px;
-      --radius-sm: 8px;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
-    
-    body { 
-      background-color: var(--bg-dark); 
-      color: var(--text-main); 
-      min-height: 100vh;
-    }
-
-    /* MÀN HÌNH KHÓA TRUY CẬP ĐĂNG NHẬP / ĐĂNG KÝ */
-    #auth-overlay {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(9, 13, 22, 0.96);
-      backdrop-filter: blur(12px);
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .auth-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border-glow);
-      padding: 32px;
-      border-radius: var(--radius-lg);
-      width: 100%;
-      max-width: 420px;
-      box-shadow: 0 0 40px rgba(99, 102, 241, 0.2);
-    }
-
-    .auth-tabs {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      border-bottom: 1px solid var(--border-color);
-      padding-bottom: 10px;
-    }
-
-    .auth-tab-btn {
-      flex: 1;
-      padding: 10px;
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-weight: 700;
-      cursor: pointer;
-      font-size: 0.95rem;
-      border-radius: var(--radius-sm);
-    }
-
-    .auth-tab-btn.active {
-      background: rgba(99, 102, 241, 0.2);
-      color: #fff;
-      border: 1px solid var(--primary);
-    }
-
-    .auth-form { display: none; }
-    .auth-form.active { display: block; }
-
-    label { display: block; margin-top: 12px; font-weight: 600; font-size: 0.82rem; color: var(--text-muted); text-transform: uppercase; }
-    input { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: rgba(0,0,0,0.3); color: #fff; }
-    
-    .btn {
-      width: 100%; padding: 12px; border: none; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; margin-top: 18px;
-      background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%); color: white;
-    }
-
-    header {
-      background: rgba(15, 23, 42, 0.8);
-      padding: 1rem 2rem;
-      border-bottom: 1px solid var(--border-color);
-      display: flex; justify-content: space-between; align-items: center;
-    }
-
-    .main-content { padding: 40px 20px; text-align: center; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cửa Hàng Tài Nguyên - Tự Động</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col font-sans">
 
-  <!-- AUTH MODAL -->
-  <div id="auth-overlay">
-    <div class="auth-box">
-      <h2 style="text-align: center; color: var(--cyan); margin-bottom: 6px;">AZOTA SYSTEM</h2>
-      <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px;">Dùng thử 7 ngày hệ thống SmartSun Edu</p>
+    <!-- Header / Navbar -->
+    <header class="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-store text-indigo-500 text-2xl"></i>
+                <span class="font-bold text-xl tracking-wide text-white">ResourceShop</span>
+            </div>
+            <!-- Wallet / Account Info -->
+            <div class="flex items-center space-x-4 bg-gray-900 px-4 py-2 rounded-lg border border-gray-700">
+                <i class="fa-solid fa-wallet text-emerald-400"></i>
+                <div>
+                    <div class="text-xs text-gray-400">Số dư hiện tại</div>
+                    <div id="user-balance" class="font-bold text-emerald-400">Đang tải...</div>
+                </div>
+            </div>
+        </div>
+    </header>
 
-      <div class="auth-tabs">
-        <button class="auth-tab-btn active" id="tab-login-btn" onclick="switchAuthTab('login')">Đăng Nhập</button>
-        <button class="auth-tab-btn" id="tab-register-btn" onclick="switchAuthTab('register')">Đăng Kỳ (7 Ngày)</button>
-      </div>
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+        
+        <!-- Banner -->
+        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 sm:p-8 mb-8 shadow-lg">
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-white mb-2">Hệ Thống Bán Tài Nguyên Tự Động</h1>
+            <p class="text-indigo-100 text-sm sm:text-base">Giao dịch nhanh chóng, uy tín, hệ thống xử lý tức thì 24/7.</p>
+        </div>
 
-      <!-- FORM ĐĂNG NHẬP -->
-      <form id="login-form" class="auth-form active" onsubmit="handleAuthSubmit(event, 'login')">
-        <label>Gmail:</label>
-        <input type="email" id="login-gmail" required placeholder="nhap@gmail.com">
+        <!-- Categories Filter -->
+        <div class="mb-6">
+            <h2 class="text-lg font-semibold mb-3 text-gray-300">Danh mục sản phẩm</h2>
+            <div id="category-list" class="flex flex-wrap gap-2">
+                <button onclick="filterCategory('all')" class="cat-btn active bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">Tất cả</button>
+                <!-- Dynamic Categories will be injected here -->
+            </div>
+        </div>
 
-        <label>Mật khẩu:</label>
-        <input type="password" id="login-pass" required placeholder="••••••••">
+        <!-- Products Grid -->
+        <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Loading Skeleton -->
+            <div class="bg-gray-800 p-5 rounded-xl border border-gray-700 animate-pulse h-64"></div>
+            <div class="bg-gray-800 p-5 rounded-xl border border-gray-700 animate-pulse h-64"></div>
+            <div class="bg-gray-800 p-5 rounded-xl border border-gray-700 animate-pulse h-64"></div>
+        </div>
+    </main>
 
-        <button type="submit" id="btn-login" class="btn">🔓 Đăng Nhập</button>
-      </form>
+    <!-- Footer -->
+    <footer class="bg-gray-800 border-t border-gray-700 py-6 text-center text-sm text-gray-400">
+        &copy; 2026 ResourceShop. All rights reserved. Powered by API.
+    </footer>
 
-      <!-- FORM ĐĂNG KÝ -->
-      <form id="register-form" class="auth-form" onsubmit="handleAuthSubmit(event, 'register')">
-        <label>Gmail nhận tài khoản:</label>
-        <input type="email" id="reg-gmail" required placeholder="nhap@gmail.com">
+    <!-- JS Logic -->
+    <script>
+        // CONFIGURATION: Cấu hình API Key và Base URL
+        const API_KEY = "tbk__l7iUqf6myzFxBN5-ToJ8gega0DXffrI-Aw098Uth2Y";
+        const BASE_URL = "https://api.cuahangtainguyen.com/api/telebot/v1";
 
-        <label>Khởi tạo Mật khẩu:</label>
-        <input type="password" id="reg-pass" required placeholder="••••••••">
+        let allProducts = [];
 
-        <p style="font-size: 0.78rem; color: #f59e0b; margin-top: 10px; line-height: 1.4;">
-          📌 Mật khẩu sẽ tự động gửi về Gmail của bạn. Tài khoản tự xóa khỏi Sheet sau 7 ngày.
-        </p>
+        // Headers chuẩn bị cho các lệnh API
+        const headers = {
+            "Authorization": `Bearer ${API_KEY}`,
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        };
 
-        <button type="submit" id="btn-register" class="btn" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">📝 Đăng Ký Dùng Thử</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- GIAO DIỆN CHÍNH SAU KHI ĐĂNG NHẬP THÀNH CÔNG -->
-  <header>
-    <div>
-      <h1 style="font-size: 1.2rem; color: #fff;">SmartSun Edu - Azota</h1>
-    </div>
-    <div>
-      <span id="user-display" style="font-size: 0.85rem; color: var(--cyan); margin-right: 12px;"></span>
-      <button onclick="logout()" style="padding: 6px 12px; background: #f43f5e; border: none; color: white; border-radius: 6px; cursor: pointer;">Đăng xuất</button>
-    </div>
-  </header>
-
-  <div class="main-content">
-    <h2>🎉 Chúc mừng! Bạn đã xác thực tài khoản Azota thành công!</h2>
-    <p style="color: var(--text-muted); margin-top: 10px;">Hệ thống đã kết nối trực tiếp với dữ liệu trên Google Sheets.</p>
-  </div>
-
-  <script>
-    // URL GOOGLE APPS SCRIPT CỦA BẠN
-    const AUTH_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxHss4s3tUdNWIO6xHKf75a-jROgoepwuaAnV6Ua6GDdIWtJ3eytDlzQD6Xl3kbnF3a/exec";
-
-    function switchAuthTab(type) {
-      document.querySelectorAll('.auth-tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-
-      if (type === 'login') {
-        document.getElementById('tab-login-btn').classList.add('active');
-        document.getElementById('login-form').classList.add('active');
-      } else {
-        document.getElementById('tab-register-btn').classList.add('active');
-        document.getElementById('register-form').classList.add('active');
-      }
-    }
-
-    async function handleAuthSubmit(e, action) {
-      e.preventDefault();
-
-      const gmail = action === 'login' ? document.getElementById('login-gmail').value : document.getElementById('reg-gmail').value;
-      const password = action === 'login' ? document.getElementById('login-pass').value : document.getElementById('reg-pass').value;
-      const btn = action === 'login' ? document.getElementById('btn-login') : document.getElementById('btn-register');
-
-      btn.disabled = true;
-      btn.innerText = "Đang xử lý...";
-
-      try {
-        const response = await fetch(AUTH_SCRIPT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action, gmail, password })
-        });
-
-        const res = await response.json();
-
-        if (res.success) {
-          alert(res.message);
-          if (action === 'login') {
-            sessionStorage.setItem('azota_user', gmail);
-            checkLoginState();
-          } else {
-            switchAuthTab('login');
-            document.getElementById('login-gmail').value = gmail;
-          }
-        } else {
-          alert("❌ " + res.message);
+        // 1. Lấy thông tin tài khoản & Số dư
+        async function fetchUserInfo() {
+            try {
+                const res = await fetch(`${BASE_URL}/me`, { headers });
+                const data = await res.json();
+                if (res.ok && data) {
+                    const balance = data.balance || data.money || 0;
+                    document.getElementById('user-balance').innerText = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(balance);
+                } else {
+                    document.getElementById('user-balance').innerText = "Lỗi API Key";
+                }
+            } catch (err) {
+                console.error("Lỗi kết nối User API:", err);
+                document.getElementById('user-balance').innerText = "Không thể kết nối";
+            }
         }
-      } catch (err) {
-        alert("Lỗi kết nối tới Server Google Sheet!");
-      } finally {
-        btn.disabled = false;
-        btn.innerText = action === 'login' ? "🔓 Đăng Nhập" : "📝 Đăng Ký Dùng Thử";
-      }
-    }
 
-    function checkLoginState() {
-      const user = sessionStorage.getItem('azota_user');
-      const overlay = document.getElementById('auth-overlay');
-      if (user) {
-        overlay.style.display = 'none';
-        document.getElementById('user-display').innerText = `👤 ${user}`;
-      } else {
-        overlay.style.display = 'flex';
-      }
-    }
+        // 2. Lấy danh mục sản phẩm (Categories)
+        async function fetchCategories() {
+            try {
+                const res = await fetch(`${BASE_URL}/categories`, { headers });
+                const categories = await res.json();
+                const container = document.getElementById('category-list');
 
-    function logout() {
-      sessionStorage.removeItem('azota_user');
-      checkLoginState();
-    }
+                if (Array.isArray(categories)) {
+                    categories.forEach(cat => {
+                        const btn = document.createElement('button');
+                        btn.className = "cat-btn bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2 rounded-lg text-sm font-medium border border-gray-700 transition";
+                        btn.innerText = cat.name || `Danh mục ${cat.id}`;
+                        btn.onclick = () => filterCategory(cat.id, btn);
+                        container.appendChild(btn);
+                    });
+                }
+            } catch (err) {
+                console.error("Lỗi lấy danh mục:", err);
+            }
+        }
 
-    window.addEventListener('DOMContentLoaded', checkLoginState);
-  </script>
+        // 3. Lấy tất cả sản phẩm
+        async function fetchProducts() {
+            try {
+                // Thử gọi lấy sản phẩm công khai
+                const res = await fetch(`${BASE_URL}/categories/all/products`, { headers })
+                    .catch(() => fetch(`${BASE_URL}/products`, { headers }));
+                
+                const data = await res.json();
+                allProducts = Array.isArray(data) ? data : (data.data || []);
+                renderProducts(allProducts);
+            } catch (err) {
+                console.error("Lỗi lấy sản phẩm:", err);
+                document.getElementById('products-grid').innerHTML = `<div class="col-span-full text-center text-red-400 py-10">Không thể tải danh sách sản phẩm. Hãy kiểm tra lại API Key hoặc CORS.</div>`;
+            }
+        }
+
+        // 4. Hiển thị danh sách sản phẩm ra màn hình
+        function renderProducts(products) {
+            const grid = document.getElementById('products-grid');
+            grid.innerHTML = '';
+
+            if (products.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center text-gray-400 py-10">Hiện chưa có sản phẩm nào trong mục này.</div>`;
+                return;
+            }
+
+            products.forEach(p => {
+                const priceFormatted = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.price || 0);
+                const card = document.createElement('div');
+                card.className = "bg-gray-800 rounded-xl border border-gray-700 p-5 flex flex-col justify-between hover:border-indigo-500 transition shadow-sm hover:shadow-indigo-500/10";
+                card.innerHTML = `
+                    <div>
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-lg text-white line-clamp-1">${p.name || 'Sản phẩm ' + p.id}</h3>
+                            <span class="bg-indigo-900/50 text-indigo-300 text-xs px-2.5 py-1 rounded-full border border-indigo-700/50">Kho: ${p.stock ?? 'Còn hàng'}</span>
+                        </div>
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">${p.description || 'Không có mô tả chi tiết cho sản phẩm này.'}</p>
+                    </div>
+                    <div>
+                        <div class="text-xl font-extrabold text-emerald-400 mb-4">${priceFormatted}</div>
+                        <button onclick="buyProduct('${p.id}', '${p.name}')" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-cart-shopping"></i>
+                            <span>Mua Ngay</span>
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // 5. Lọc sản phẩm theo danh mục
+        function filterCategory(catId, element) {
+            document.querySelectorAll('.cat-btn').forEach(b => {
+                b.classList.remove('bg-indigo-600', 'text-white');
+                b.classList.add('bg-gray-800', 'text-gray-300');
+            });
+
+            if (element) {
+                element.classList.remove('bg-gray-800', 'text-gray-300');
+                element.classList.add('bg-indigo-600', 'text-white');
+            }
+
+            if (catId === 'all') {
+                renderProducts(allProducts);
+            } else {
+                const filtered = allProducts.filter(p => p.category_id == catId);
+                renderProducts(filtered);
+            }
+        }
+
+        // 6. Xử lý Mua Sản Phẩm (Gọi API POST /purchases)
+        async function buyProduct(productId, productName) {
+            if (!confirm(`Bạn có chắc chắn muốn mua: "${productName}"?`)) return;
+
+            try {
+                const res = await fetch(`${BASE_URL}/purchases`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        product_id: productId,
+                        quantity: 1
+                    })
+                });
+
+                const result = await res.json();
+
+                if (res.ok) {
+                    alert(`✅ Mua thành công! Mã đơn: ${result.id || 'Thành công'}\nNội dung/Tài khoản: ${result.code || result.data || 'Kiểm tra lịch sử mua'}`);
+                    fetchUserInfo(); // Cập nhật lại số dư
+                } else {
+                    alert(`❌ Mua thất bại: ${result.message || 'Số dư không đủ hoặc hết hàng'}`);
+                }
+            } catch (err) {
+                console.error("Lỗi khi mua hàng:", err);
+                alert("❌ Đã xảy ra lỗi kết nối khi xử lý đơn hàng.");
+            }
+        }
+
+        // Khởi chạy khi trang tải xong
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchUserInfo();
+            fetchCategories();
+            fetchProducts();
+        });
+    </script>
 </body>
 </html>
